@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+  </head>
+  <body>
+
+    <div class="messageArea">
+
+    </div>
+
+    <button id="send">Send</button>
+    <button id="del">Del room</button>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.0.3/socket.io.js"></script>
+    <script>
+      let messageArea$ = document.querySelector('.messageArea');
+      let send$ = document.querySelector('#send');
+      let del$ = document.querySelector('#del');
+
+      var socket = io('http://localhost:8080/bomj', {query: 'h=ui'});
+      var group = io.connect('http://localhost:8080/bomj/333');
+      socket.on('newRoom', (room) => {
+        console.log('New room was created!' + room);
+        group = io.connect('http://localhost:8080/bomj' + room);
+      });
+
+      send$.addEventListener('click', () => {
+        console.log('click');
+        group.emit('message', new Date());
+      });
+
+      del$.addEventListener('click', () => {
+        group.emit('delete', room);
+      });
+
+      group.on('message', data => {
+        messageArea$.innerHTML += '<p>' + data + '</p>';
+      });
+
+    </script>
+  </body>
+</html>

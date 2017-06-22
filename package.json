@@ -1,0 +1,25 @@
+{
+  "name": "shatquizapp",
+  "version": "1.0.0",
+  "description": "chat and quiz backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.17.2",
+    "cors": "^2.8.3",
+    "express": "^4.15.3",
+    "jsonwebtoken": "^7.4.1",
+    "lodash": "^4.17.4",
+    "mongoose": "^4.10.7",
+    "morgan": "^1.8.2",
+    "passport": "^0.3.2",
+    "passport-jwt": "^2.2.1",
+    "socket.io": "^2.0.3",
+    "winston": "^2.3.1"
+  }
+}
