@@ -41,6 +41,8 @@ const users = require('./routes/users');
 
 //bodyparser middleware
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
 
 //CORS middleware (cross origin requests)
 app.use(cors());

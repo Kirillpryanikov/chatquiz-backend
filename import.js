@@ -6,37 +6,88 @@ const config = require('./config/config');
 mongoose.Promise = global.Promise;
 mongoose.connect(config.database);
 mongoose.connection.on('connected', () => {
-  (new User({
-    email: 'test@test.test',
-    password: 'test'
-  })).save().then(user => {
-    console.log('Test user was saved email : test@test.test & password : test');
-  }).catch(e => {
-    console.log(e);
-  });
+  // (new User({
+  //   email: 'test@test.test',
+  //   password: 'test'
+  // })).save().then(user => {
+  //   console.log('Test user was saved email : test@test.test & password : test');
+  // }).catch(e => {
+  //   console.log(e);
+  // });
 
   (new Quiz({
     name : 'Test',
 
     questions : [{
+    
+      id: 1,
       title : 'How are you?',
-      answers : ['Norm', 'Tak sebe', 'Ty chto chert poputal e?'],
+      answers : [{
+        id: 1,
+        text: 'Answer 1'
+      },{
+        id: 2,
+        text: 'Answer 2'
+      },{
+        id: 3,
+        text: 'Answer 3'
+      }],
       multiselect : false
     }, {
       title : 'Che kogo?',
-      answers : ['takoe', 'normalno', 'zbs'],
+      id: 2,
+      answers : [{
+        id: 1,
+        text: 'Answer 1'
+      },{
+        id: 2,
+        text: 'Answer 2'
+      },{
+        id: 3,
+        text: 'Answer 3'
+      }],
       multiselect : false
     },{
+      id: 3,
       title : 'Kto takoy Chingi Khan',
-      answers : ['Tip', 'Chert', 'Vlastitel mira'],
-      multiselect : false
+      answers : [{
+        id: 1,
+        text: 'Answer 1'
+      },{
+        id: 2,
+        text: 'Answer 2'
+      },{
+        id: 3,
+        text: 'Answer 3'
+      }],
+      multiselect : true
     },{
+      id: 4,
       title : 'Yanyk vernetsya?',
-      answers : ['Net', 'Da', 'Salo uronili'],
+      answers : [{
+        id: 1,
+        text: 'Answer 1'
+      },{
+        id: 2,
+        text: 'Answer 2'
+      },{
+        id: 3,
+        text: 'Answer 3'
+      }],
       multiselect : false
     },{
+      id: 5,
       title : 'Ya vchera byl doma, a ona takay tipa net davay ne budem',
-      answers : ['Podstatva', 'Ty sho ty tip', 'nu esli tak podumat to sam vinovat'],
+      answers : [{
+        id: 1,
+        text: 'Answer 1'
+      },{
+        id: 2,
+        text: 'Answer 2'
+      },{
+        id: 3,
+        text: 'Answer 3'
+      }],
       multiselect : false
     }]
   })).save().then(quiz => {

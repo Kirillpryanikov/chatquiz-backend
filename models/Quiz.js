@@ -4,8 +4,14 @@ const QuizSchema = new mongoose.Schema({
   name : String,
 
   questions : [{
+    _id: false,
+    id: Number,
     title : String,
-    answers : [String],
+    answers : [{
+      _id: false,
+      id : Number,
+      text: String
+    }],
     multiselect : Boolean
   }],
 
@@ -17,6 +23,7 @@ const QuizSchema = new mongoose.Schema({
     },
 
     answers: [{
+      _id: false,
       questionId : Number,
       answersIds: [Number]
     }]

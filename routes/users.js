@@ -4,13 +4,15 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const _ = require('lodash');
 
-const config = require('../config/config');
 const {User} = require('../models/User');
 const {Quiz} = require('../models/Quiz');
+const {ObjectID} = require('mongodb');
+const config = require('../config/config');
 
 
-router.post('/auth', (req, res) => {
+router.post('/auth/', (req, res) => {
 
+  console.log(req.body);
   let email = req.body.email;
   let password = req.body.password;
   let key = req.headers['x-app-key'];
@@ -34,8 +36,12 @@ router.post('/auth', (req, res) => {
         User.comparePassword(password, user.password, (err, isMatch) => {
           if (err) {return next(err);}
           if (isMatch) {
-            user.token = jwt.sign(user._id, config.secret, {expiresIn: 604800});
-            res.status(200).json({ data: user});
+            let token = jwt.sign({id: user._id}, config.secret, {expiresIn: 604800});
+            res.status(200).json({
+              _id: user._id,
+              token: token,
+              email: user.email
+            });
           } else {
             return res.status(400).json({data: null, password: {notMatch :'Wrong password'}});
           }
@@ -45,18 +51,18 @@ router.post('/auth', (req, res) => {
   }
 });
 
-router.get('/check-token', passport.authenticate('jwt', {session: false}), (req, res) => {
+router.get('/check-token/', passport.authenticate('jwt', {session: false}), (req, res) => {
   if (req.user) {
     res.json({success : true});
   }
 });
 
-router.get('/:listid/chat',  /*passport.authenticate('jwt', {session: false}),*/ (req, res) => {
+router.get('/:listid/chat/',  passport.authenticate('jwt', {session: false}), (req, res) => {
   req.createRoom(req.params.listid, 'bomj');
   res.status(200).send();
 });
 
-router.get('/:listid/quiz', passport.authenticate('jwt', {session: false}), (req, res) => {
+router.get('/:listid/quiz/', passport.authenticate('jwt', {session: false}), (req, res) => {
   const quizid = req.params.listid;
   const secretAppKey = config.appkey;
 
@@ -69,29 +75,26 @@ router.get('/:listid/quiz', passport.authenticate('jwt', {session: false}), (req
       if (!quiz) {
         res.status(400).json({data: null, message: `No quiz with id:${quizid} found`});
       }  else {
-        req.status(200).json({data: quiz});
+        res.status(200).json(quiz.questions);
       }
-    }).catch((e) => {
+    }).catch(e => {
       res.status(400).json({data: null, message: 'Something went wrong', error : e});
     });
   }
 });
 
-router.post('/:listid/quiz', passport.authenticate('jwt', {session: false}), (req, res) => {
+router.post('/:listid/quiz/', passport.authenticate('jwt', {session: false}), (req, res) => {
   const quizid = req.params.listid;
   const secretAppKey = config.appkey;
+
 
   let key = req.headers['x-app-key'];
 
   if (key !== secretAppKey) {
     res.status(403).json({data: null, appkey: {notMatch: "Not enough permissions"}});
   } else {
-    Quiz.findById(quizid).then((quiz) => {
-      if (!quiz) {
-        res.status(400).json({data: null, message: `No quiz with id:${quizid} found`});
-      }  else {
-        req.status(200).json({data: quiz});
-      }
+    Quiz.findOneAndUpdate(quizid).then((quiz) => {
+
     }).catch((e) => {
       res.status(400).json({data: null, message: 'Something went wrong', error : e});
     });
