@@ -5,7 +5,7 @@ const QuizSchema = new mongoose.Schema({
 
   questions : [{
     title : String,
-    answers : Array,
+    answers : [String],
     multiselect : Boolean
   }],
 

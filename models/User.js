@@ -28,10 +28,10 @@ UserSchema.statics.comparePassword = function(candidatePassword, hash, callback)
 UserSchema.pre('save', function(next) {
     var user = this;
 
-    if (user.isModified(password)) {
+    if (user.isModified('password')) {
         bcrypt.genSalt(10, (err, salt) => {
-            bcrypt.hash(user.local.password, salt, (err, hash) => {
-                user.local.password = hash;
+            bcrypt.hash(user.password, salt, (err, hash) => {
+                user.password = hash;
                 next();
             });
         });
