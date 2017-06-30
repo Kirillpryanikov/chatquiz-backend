@@ -16,7 +16,7 @@ const QuizSchema = new mongoose.Schema({
   }],
 
   replies :[{
-
+    _id: false,
     _creator: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

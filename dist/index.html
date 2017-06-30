@@ -18,25 +18,14 @@
       let send$ = document.querySelector('#send');
       let del$ = document.querySelector('#del');
 
-      var socket = io('http://localhost:8080/bomj', {query: 'h=ui'});
-      var group = io.connect('http://localhost:8080/bomj/333');
-      socket.on('newRoom', (room) => {
-        console.log('New room was created!' + room);
-        group = io.connect('http://localhost:8080/bomj' + room);
+      var socket = io.connect('http://localhost:8080', {query: 'token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjU5NTFmZmM1ODBhNDY1MjQyZTAyYmE1ZSIsImlhdCI6MTQ5ODU3MzY1NSwiZXhwIjoxNDk5MTc4NDU1fQ.ngKYDIDho9USDLex8uJ9Ow8Z-cF8H-kOp8ooBDmILP4'});
+      var room = '123';
+
+      socket.on('connect', () => {
+        socket.emit('room', room);
       });
 
-      send$.addEventListener('click', () => {
-        console.log('click');
-        group.emit('message', new Date());
-      });
-
-      del$.addEventListener('click', () => {
-        group.emit('delete', room);
-      });
-
-      group.on('message', data => {
-        messageArea$.innerHTML += '<p>' + data + '</p>';
-      });
+      socket.on('message', function(data) { console.log('Incoming message:', data); });
 
     </script>
   </body>

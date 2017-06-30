@@ -1,54 +1,62 @@
 const socketIO = require('socket.io');
+const jwt = require('jsonwebtoken');
+const config = require('../config/config');
+const {User} = require('../models/User');
 
 module.exports = (server) => {
     const io = socketIO(server);
-    return function (req, res, next) {
+    //connect to sockets
+    io.sockets.on('connection', function (socket) {
+      //this is used to verify token and if token is valid and user is found it connects him to room
+      // also this code used as middleware
+      jwt.verify(socket.handshake.query.token, config.secret, (err, deccoded) => {
+        if (err) {
+          //if token is not valid rejects creating a room
+          return;
+        } else {
+          //finds user in database
+          User.findById(deccoded.id).then(user => {
+            if(!user) {
+              return;
+            } else {
+              let currentuser = {
+                username : user.firstname,
+                id: user._id,
+                avatar: user.imageUrl
+              };
+              socket.on('room', function (room) {
+                  socket.join(room);
+                  socket.on('message', data => {
+                      let msg = {
+                          message: data.message,
+                          from: currentuser,
+                          time: new Date()
+                      };
+                      console.log(msg);
+                    io.sockets.in(room).emit('message', msg);
+                  });
 
-        req.io = io;
-
-        io.sockets.on('connection', function (socket) {
-
-            let connectedRoom = req.params.listid;
-
-            socket.on('room', function (room) {
-                socket.join(room);
-            });
-
-            socket.on('message', data => {
-                let msg = {
-                    message: data.message,
-                    from: req.user.email,
-                    time: new Date()
-                };
-                io.socekts.in(connectedRoom).emit('message', msg);
-            });
-        });
-
-        // req.io = io;
-        // io.of('/bomj').on('connection', (socket, data) => {
-        //   console.log(socket);
-        // });
-        //
-        // req.createRoom = (roomName, nm) => {
-        //   const room = `/${nm}/${roomName}`;
-        //   if(~Object.keys(io.nsps).indexOf(room)) return;
-        //   let groupNsp = io.of(room);
-        //
-        //   console.log('new room:', room);
-        //
-        //   io.of(nm).emit('newRoom', roomName);
-        //
-        //   groupNsp.on('connection', socket => {
-        //     socket.on('message', (data) => {
-        //       let msg = {
-        //         message: data.message,
-        //         from: 'USER',
-        //         time: new Date()
-        //       };
-        //       groupNsp.emit('message', msg);
-        //     });
-        //   });
-        // };
-        next();
-    };
+                  socket.on('image', data => {
+                    let msg = {
+                      message: data.message,
+                      image: data.image,
+                      imageName: data.image_name,
+                      from: currentuser,
+                      time: new Date()
+                    };
+                    io.sockets.in(room).emit('image', msg);
+                  });
+              });
+              socket.on('disconnect', function (room) {
+                  socket.leave(room);
+              });
+            }
+          });
+        }
+      });
+    });
+    //middleware mock does nothing, but needed
+ return function(req, res, next) {
+   next();
+ };
 };

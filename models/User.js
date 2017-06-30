@@ -3,8 +3,10 @@ const bcrypt = require('bcryptjs');
 const config = require('../config/config');
 
 const UserSchema = mongoose.Schema({
+    firstname: String,
     email : String,
-    password : String
+    password : String,
+    imageUrl: String
 });
 
 UserSchema.statics.getUserByID = function (id, callback) {

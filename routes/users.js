@@ -40,7 +40,9 @@ router.post('/auth/', (req, res) => {
             res.status(200).json({
               _id: user._id,
               token: token,
-              email: user.email
+              email: user.email,
+              firstname: user.firstame,
+              imageUrl: user.imageUrl
             });
           } else {
             return res.status(400).json({data: null, password: {notMatch :'Wrong password'}});
@@ -53,13 +55,12 @@ router.post('/auth/', (req, res) => {
 
 router.get('/check-token/', passport.authenticate('jwt', {session: false}), (req, res) => {
   if (req.user) {
-    res.json({success : true});
+    res.status(200).json({message : 'Token is valid'});
   }
 });
 
 router.get('/:listid/chat/',  passport.authenticate('jwt', {session: false}), (req, res) => {
-  req.createRoom(req.params.listid, 'bomj');
-  res.status(200).send();
+  res.status(200).send({hello : 'sec'});
 });
 
 router.get('/:listid/quiz/', passport.authenticate('jwt', {session: false}), (req, res) => {
@@ -87,14 +88,20 @@ router.post('/:listid/quiz/', passport.authenticate('jwt', {session: false}), (r
   const quizid = req.params.listid;
   const secretAppKey = config.appkey;
 
-
   let key = req.headers['x-app-key'];
 
   if (key !== secretAppKey) {
     res.status(403).json({data: null, appkey: {notMatch: "Not enough permissions"}});
   } else {
-    Quiz.findOneAndUpdate(quizid).then((quiz) => {
-
+    Quiz.findOneAndUpdate({_id: quizid}, {'$push': {replies: {
+      answers: req.body,
+      _creator: req.user._id
+    }}}).then((quiz) => {
+      if (!quiz) {
+        res.status(400).json({data: null, message: `No quiz with id:${quizid} found`});
+      }  else {
+        res.status(200).json({message: 'Thank you for your answers'});
+      }
     }).catch((e) => {
       res.status(400).json({data: null, message: 'Something went wrong', error : e});
     });

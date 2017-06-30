@@ -16,6 +16,7 @@ var logger = new winston.Logger({
       level: 'debug',
       handleExceptions: true,
       timestamp: true,
+      humanReadableUnhandledException: true,
       json: false,
       colorize: true
     })
