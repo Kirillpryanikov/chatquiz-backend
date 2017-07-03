@@ -4,7 +4,12 @@
   "description": "chat and quiz backend",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start:pm2:prod": "pm2 start pm2.config.json --env production",
+    "start:pm2:dev": "pm2 start pm2.config.json --env development",
+    "restart:pm2": "pm2 restart ChatQuiz",
+    "status:pm2": "pm2 status",
+    "stop:pm2": "pm2 delete ChatQuiz"
   },
   "author": "",
   "license": "ISC",
@@ -19,6 +24,7 @@
     "morgan": "^1.8.2",
     "passport": "^0.3.2",
     "passport-jwt": "^2.2.1",
+    "pm2": "2.5.0",
     "socket.io": "^2.0.3",
     "winston": "^2.3.1"
   }
