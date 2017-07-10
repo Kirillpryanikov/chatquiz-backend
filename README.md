@@ -1,7 +1,7 @@
 #ChatQuiz app
 
 ---
-
+## Server
 For local development:
 
 ` node index.js `
@@ -25,3 +25,12 @@ To restart server:
 To show status:
 
 `npm run status:pm2`
+
+## Front
+```
+npm install
+npm install -g gulp (if needed)
+gulp
+```
+http://localhost:8080/quiz/#/:room/quiz
+http://localhost:8080/imagechat/#/:room/chat

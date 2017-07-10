@@ -55,7 +55,7 @@ angular.module('App', ['ionic', 'ngAnimate', 'monospaced.elastic', 'angularMomen
         $urlRouterProvider.otherwise('quiz');
 }])
  // window.location.origin
-.constant('BaseURL', 'http://192.168.0.110:8080/')
+.constant('BaseURL', window.location.origin+'/')
 .factory('AuthInterceptor', function(StorageService,$q,$location) {
   return {
     request: function(config) {
