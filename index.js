@@ -1,32 +1,21 @@
 const express = require('express');
-const passport = require('passport');
 const path = require('path');
 const http = require('http');
-const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const cors = require('cors');
-const _ = require('lodash');
 const config = require('./config/config');
 const logger = require('./config/logger');
-const socketMiddleware = require('./config/socketMiddleware');
-// const socketIO = require('socket.io');
+const request = require('request');
+const cors = require('cors');
+const rp = require('request-promise');
 
-mongoose.Promise = global.Promise;
-mongoose.connect(config.database);
-mongoose.connection.on('connected', () => {
-    console.log('connected to database: ' + config.database);
-});
-
-mongoose.connection.on('error', (err) => {
-    console.log('Error: ' + err);
-});
+const socketIO = require('socket.io');
 
 const app = express();
 const port = process.env.PORT || 8080;
-
 const server = http.createServer(app);
-// const io = socketIO(server);
-app.use(socketMiddleware(server));
+const io = socketIO(server);
+
+app.use(cors());
 
 app.use(express.static(__dirname + '/dist'));
 
@@ -35,57 +24,69 @@ app.use(require('morgan')('combined', {
     "stream": logger.stream
 }));
 
-//router middleware
-const users = require('./routes/users');
+app.use('/', (req, res) => {
+    var url = 'https://apidev.growish.com/v1' + req.url;
+    req.pipe(request(url)).pipe(res);
+});
 
+io.sockets.on('connection', function (socket) {
 
-//bodyparser middleware
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+  var userid = socket.handshake.query.userid;
 
+    socket.on('room', function (room) {
+        let currentRoom = room;
+        socket.join(room);
+        socket.on('message', data => {
+            let msg = {
+                message: data.message,
+                from: data.user,
+                time: new Date()
+            };
+            io.sockets.in(room).emit('message', msg);
+        });
 
-//CORS middleware (cross origin requests)
-app.use(cors());
+        socket.on('image', data => {
+            let msg = {
+                message: data.message,
+                image: data.image,
+                imageName: data.image_name,
+                from: data.user,
+                time: new Date()
+            };
+            io.sockets.in(room).emit('image', msg);
+        });
 
-//passport middleware
-app.use(passport.initialize());
-app.use(passport.session());
+        socket.on('checktoken', data => {
+            let token = data.handshake.query.token;
+            let options = {
+              uri: 'https://apidev.growish.com/v1/check-token/',
+              headers: {
+                 'User-Agent': 'Request-Promise',
+                 'x-app-key': '1234567890',
+                 'x-auth-token': token,
+              }
+            };
 
-app.use(users);
+            rp(options).then(data => {
+              let msg = {
+                access: true
+              };
+              io.sockets.in(room).emit('checktoken', msg);
+            }).catch(e => {
+              let msg = {
+                access: false
+              };
+              io.sockets.in(room).emit('checktoken', msg);
+            });
 
-require('./config/passport')(passport);
+        });
+        socket.on('disconnect', function (room) {
+            socket.leave(room);
+        });
+    });
 
+});
 
-// io.on('connection', function (socket) {
-//     socket.on('connectToGroup', function (group) {
-//         let groupNsp = io.of('/' + listid + '/chat');
-//
-//         groupNsp.on('connection', socket => {
-//
-//         });
-//     });
-// });
-//
-// let RoomsArray = ['ttt', 'ddd', 'ggg'];
-// let sokectsArray = [];
-//
-// RoomsArray.forEach((room) => {
-//     let rm = io.of(room);
-//
-//     rm.on('connection', (socket) => {
-//         console.log(`connect to room ${room}`);
-//         socket.on('message', (data) => {
-//             console.log('message');
-//             rm.emit('out-message', data);
-//         });
-//         socket.on('delete', room => {
-//             console.dir(rm, {
-//                 color: 'green'
-//             });
-//         });
-//     });
-//     sokectsArray.push(rm);
-// });
 
 server.listen(port, () => {
     console.log(`Socket server started listen on port: ${port}`);
