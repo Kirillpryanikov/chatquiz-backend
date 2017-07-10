@@ -1,23 +1,6 @@
 {
-  "name": "chatquiztest",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "postinstall": "cd quiz && bower install && cd ../imagechat && bower install"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "body-parser": "^1.17.2",
-    "cors": "^2.8.3",
-    "express": "^4.15.3",
-    "morgan": "^1.8.2",
-    "request": "^2.81.0",
-    "request-promise": "^4.2.1",
-    "socket.io": "^2.0.3",
-    "winston": "^2.3.1"
-  },
+  "name": "Quiz",
+  "version": "1.1.1",
   "devDependencies": {
     "@ionic/cli-plugin-gulp": "1.0.1",
     "@ionic/cli-plugin-ionic1": "2.0.0",
@@ -40,5 +23,8 @@
     "merge2": "^1.0.2",
     "preen": "^1.2.0",
     "shelljs": "^0.3.0"
+  },
+  "dependencies": {
+    "socket.io-client": "^2.0.3"
   }
 }

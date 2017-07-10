@@ -1,0 +1,9 @@
+{
+  "directory": "../dist/imagechat/lib",
+  "ignoredDependencies": [
+    "angular",
+    "angular-animate",
+    "angular-ui-router",
+    "angular-sanitize"
+  ]
+}

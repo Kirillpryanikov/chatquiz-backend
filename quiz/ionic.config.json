@@ -1,0 +1,12 @@
+{
+  "name": "Quiz",
+  "app_id": "8a460031",
+  "gulpStartupTasks": [
+    "watch"
+  ],
+  "watchPatterns": [
+    "app/**/*",
+    "scss/**/*"
+  ],
+  "type": "ionic1"
+}

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<widget version="0.0.1" xmlns="http://www.w3.org/ns/widgets" >
+  <name>Ionic ElastiChat</name>
+
+  <content src="index.html"/>
+  <access origin="*"/>
+
+</widget>
