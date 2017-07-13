@@ -13,6 +13,17 @@ h1,h2,h3,h4,h5,p,span,div,input, button, select, textarea {
 .q-pagin {
   margin-right: 10px;
 }
+.multi {
+  font-size: 0.6em;
+  color: #fff;
+  padding: 3px 5px;
+  background-color: #1bbc9b;
+  border-radius: 3px;
+  -webkit-border-radius: 3px;
+  -moz-border-radius:3px;
+  margin-left: 20px;
+  font-weight: 600;
+}
 #logout {
   float: right;
   z-index: 99999;
@@ -300,8 +311,8 @@ h1,h2,h3,h4,h5,p,span,div,input, button, select, textarea {
       padding: 5px;
     }
     .scale-in-bl {
-    	-webkit-animation: scale-in-bl 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
-    	        animation: scale-in-bl 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+    	-webkit-animation: scale-in-bl 0.2s cubic-bezier(0.250, 0.260, 0.250, 0.940) both;
+    	        animation: scale-in-bl 0.2s cubic-bezier(0.250, 0.260, 0.250, 0.940) both;
     }
     .q-progress {
       display: inline-block;
@@ -342,8 +353,8 @@ h1,h2,h3,h4,h5,p,span,div,input, button, select, textarea {
       opacity: 0.7;
     }
     .scale-in-center {
-    	-webkit-animation: scale-in-center 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) 1s both;
-    	        animation: scale-in-center 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) 1s both;
+    	-webkit-animation: scale-in-center 0.5s cubic-bezier(0.250, 0.260, 0.250, 0.940) 1s both;
+    	        animation: scale-in-center 0.5s cubic-bezier(0.250, 0.260, 0.250, 0.940) 1s both;
     }
 
     @-webkit-keyframes scale-in-center {

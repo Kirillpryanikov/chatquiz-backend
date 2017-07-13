@@ -1,5 +1,5 @@
 <ion-view class="homeView" cache-view="false" hide-back-button="true"
-view-title="<i class='icon ion-chatbubble user-messages-top-icon'></i>&nbsp;&nbsp;Chat room">
+view-title="<i class='icon ion-chatbubble user-messages-top-icon'></i>&nbsp;&nbsp;Chat">
 	<div class="loader-center" ng-if="!doneLoading">
 		<div class="loader">
 			<i class="icon ion-load-c"></i>
@@ -65,8 +65,8 @@ view-title="<i class='icon ion-chatbubble user-messages-top-icon'></i>&nbsp;&nbs
 			<div class="footer-btn-wrap">
 				<button for="upload_input" class="button button-icon icon ion-images button-dark button-clear photo" type="button" ng-if="!input.message || input.message === ''"
 					on-tap="sendPhoto()" id="sendphoto">
-					<input type="file" id="upload_input" name="upload"
-					 onchange="angular.element(this).scope().sendPhoto(this)" ng-model="fileinput"/>
+					<input type="file" id="upload_input" name="upload" accept="image/*"
+					 onchange="angular.element(this).scope().sendPhoto(this)" ng-model="fileinput" />
         </button>
 
 				<button class="button button-icon icon ion-android-send footer-btn" type="submit" ng-disabled="!input.message || input.message === ''"

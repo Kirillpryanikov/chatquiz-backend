@@ -1,15 +1,16 @@
 <ion-view class="homeView" hide-back-button="true" view-title="<i class='icon ion-chatbubble user-messages-top-icon'></i><div class='msg-header-username'>Quiz</div>">
-		<!-- <div class="loader">
+	<div class="loader-center" ng-if="doneLoading">
+		<div class="loader">
 			<i class="icon ion-load-c"></i>
-		</div> -->
-	</div> -->
+		</div>
+	</div>
 	<ion-content overflow-scroll="false" has-bouncing="true" class="has-header has-footer" delegate-handle="userMessageScroll">
 		<ion-grid ng-if="!submited">
 			<ion-list>
 		  <ion-row class="q-padding" ng-repeat="quiz in quizs track by $index">
 		    <ion-col>
 					  <ion-item id="quiz{{$index}}" class="quiz-wrapper" >
-							<h4>{{quiz.title}} #{{$index+1}}</h4>
+							<h4>{{quiz.title}} #{{$index+1}} <span class="multi" ng-if="quiz.multipleSelect">multy</span></h4>
 								<div class="quizs-btn-wrapper">
 									<div class="quiz-btn" ng-repeat="answer in quiz.answers track by $index">
 										<button class="btn-q" ng-class="answer.picked? 'q-fade':'q-active'" ng-click="setQuiz(quizs.indexOf(quiz), $index);">
@@ -31,8 +32,9 @@
 							<ion-item class="quiz-wrapper" style="border-bottom:0px;margin-bottom:9em">
 								<div class="quizs-btn-wrapper">
 									<div class="quiz-btn">
-										<button class="btn-q" ng-click="sabmitData()" ng-disabled="getCount() < quizs.length">
-											Submit
+										<button class="btn-q" ng-click="sabmitData()"
+										translate="SEND" ng-disabled="getCount() < quizs.length">
+
 										</button>
 									</div>
 								</div>
@@ -46,7 +48,7 @@
 	</ion-content>
 	<div ng-if="submited" class="submited scale-in-center">
 		<i class="icon ion-checkmark-round"	></i>
-		<div>Thanks for compliting</div>
+		<div translate="THANK"></div>
 		<!-- <button class="btn-q">Go back</button> -->
 	</div>
 	<ion-footer-bar class="bar-stable item-input-inset message-footer" keyboard-attach>

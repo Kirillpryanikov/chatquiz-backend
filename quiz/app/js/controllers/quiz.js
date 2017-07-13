@@ -44,19 +44,29 @@
 				 message:false
 			 };
 			 $scope.login = function(form,data) {
+				 $scope.doneLoading = true;
 				 if(form.$valid) {
 				 	ApiService.login(data)
 					 .then(function(resp) {
-							 StorageService.setAuthData(resp.data.data);
-  						 $state.go('quiz');
+						 	resp.data = resp.data.data? resp.data.data : resp.data;
+						 	StorageService.setAuthData(resp.data);
+							$scope.doneLoading = false;
+  						$state.go('quiz');
 					 })
 					 .catch(function(resp){
-						if (resp.data.data.hasOwnProperty('password')) {
-							$scope.valid.message = resp.data.data.password.notMatch;
-						}
-						if (resp.data.hasOwnProperty('message')) {
-							$scope.valid.message = resp.data.data.message;
-						}
+						 $scope.doneLoading = false;
+						 $scope.doneLoading = false;
+						 resp.data = resp.data.data? resp.data.data:resp.data;
+						 if(resp.status !== 404) {
+ 							if (resp.data.hasOwnProperty('password')) {
+ 	 							$scope.valid.message = resp.data.password.notMatch;
+	 	 					}
+	 	 					if (resp.data.hasOwnProperty('message')) {
+	 	 					 	$scope.valid.message = resp.data.message;
+	 	 					}
+	 					} else {
+ 						 	$scope.valid.message = "Access Invalid Credentials"
+ 					 	}
 					 });
 				 } else {
 				 	 $scope.showAlert();
@@ -80,13 +90,17 @@
 		$scope.optlabel = ["A","B","C","D","G","E"];
 
 		var init = function() {
+			$scope.doneLoading = true;
+
 			ApiService.getQuizs(listId)
 			.then(function(resp){
+				$scope.doneLoading = false;
 				$scope.quizs = resp.data.data;
 				console.log($scope.quizs);
 
 			})
 			.catch(function(resp){
+				$scope.doneLoading = false;
 				$scope.quizs = ApiService.getMockQuizs();
 			});
 		}
@@ -102,12 +116,13 @@
 						return quiz;
 					});
 					$scope.quizs[index].answers[option].picked = true;
-
 			}
 
 			var i = $scope.getCount();
 			var els = document.getElementsByClassName('q-progress-li');
-			els[i-1].style.background = '#1bbc9b';
+			if(els[i-1]) {
+				els[i-1].style.background = '#1bbc9b';
+			}
 		}
 		$scope.getCount = function () {
 			if(!$scope.quizs) return false;
@@ -122,7 +137,6 @@
 
 		$scope.populateData = function() {
 			return $scope.quizs.map(function(question) {
-
 				return {
 					questionId: question.id,
 					answersIds: question.answers.reduce(function(all, current) {
@@ -133,9 +147,17 @@
 			});
 		}
 		$scope.sabmitData = function() {
+			$scope.doneLoading = true;
+
 			$scope.submited = true;
 			$scope.animation = false;
-			ApiService.setQuizs($scope.populateData(),listId);
+			ApiService.setQuizs($scope.populateData(),listId)
+			.then(function(){
+				$scope.doneLoading = false;
+			})
+			.catch(function(){
+				$scope.doneLoading = false;
+			});
 		}
 
 	}

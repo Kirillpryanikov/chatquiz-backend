@@ -1,25 +1,30 @@
 <ion-view view-title="Login" hide-back-button="true" name="login-view">
+  <div class="loader-center" ng-if="doneLoading">
+    <div class="loader">
+      <i class="icon ion-load-c"></i>
+    </div>
+  </div>
   <ion-content class="padding">
       <div class="list list-inset">
         <form class="login-form" method="post" name="loginForm" novalidate>
-          <p ng-show="valid.message" class="help-block">Message: {{valid.message}}</p>
+          <p ng-show="valid.message" class="help-block">{{ 'MESSAGE_CAPS' | translate }}: {{valid.message}}</p>
 
           <label class="item item-input">
-              <input type="email" name="email" placeholder="email" ng-model="data.email"
+              <input type="email" name="email" placeholder="mail" ng-model="data.email"
               ng-class="{ 'has-error' : loginForm.email.$invalid && !loginForm.email.$pristine }" required>
           </label>
-          
-          <p ng-show="loginForm.email.$invalid && !loginForm.email.$pristine || valid.email" class="help-block">You email is required.</p>
+
+          <p ng-show="loginForm.email.$invalid && !loginForm.email.$pristine || valid.email" class="help-block">Your email is required.</p>
 
           <label class="item item-input">
               <input type="password" name="pass" placeholder="Password" ng-model="data.password"
-              ng-class="{ 'has-error' : loginForm.pass.$invalid && !loginForm.pass.$pristine }" required>
+              ng-class="{ 'has-error' : loginForm.pass.$invalid && !loginForm.pass.$pristine }" required />
           </label>
-          <p ng-show="loginForm.pass.$invalid && !loginForm.pass.$pristine || valid.pass" class="help-block">You password is required.</p>
+          <p ng-show="loginForm.pass.$invalid && !loginForm.pass.$pristine || valid.pass" class="help-block">Your password is required.</p>
         </form>
 
       </div>
-      <button class="button button-block button-calm login-btn" ng-click="login(loginForm,data)">Sign In</button>
+      <button class="button button-block button-calm login-btn" ng-click="login(loginForm,data)" translate="LOGIN_BUTTON_TEXT"></button>
 
   </ion-content>
 </ion-view>

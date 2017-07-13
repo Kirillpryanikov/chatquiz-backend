@@ -26,6 +26,7 @@
 	function LoginCtrl($scope, $rootScope, $state, $stateParams, ChatService, StorageService,
     $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal)
 		{
+
 		 $scope.data = {};
 
 		 // An alert dialog
@@ -39,28 +40,38 @@
 					//console.log('Thank you for not eating my delicious ice cream cone');
 				});
 			};
+
 			$scope.valid={
 				password:false,
 				message:false
 			};
 			$scope.login = function(form,data){
+				$scope.doneLoading = true;
 				var room = $stateParams.list? $stateParams.list : StorageService.getRoom();
 				if(form.$valid) {
 				 ChatService.login(data)
 					.then(function(resp) {
-						// console.log('then',resp);
-							StorageService.setAuthData(resp.data.data);
+						resp.data = resp.data.data? resp.data.data : resp.data;
+						//console.log('then',resp);
+							StorageService.setAuthData(resp.data);
+								$scope.doneLoading = false;
 								$state.go('chat',{list:room});
 					})
 					.catch(function(resp){
-						// console.log('err',resp);
+						console.log('err',resp);
+						resp.data = resp.data.data? resp.data.data:resp.data;
+						$scope.doneLoading = false;
+						if(resp.status !== 404) {
+							if (resp.data.hasOwnProperty('password')) {
+		 						 $scope.valid.message = resp.data.password.notMatch;
+		 					 }
+		 					 if (resp.data.hasOwnProperty('message')) {
+		 						 $scope.valid.message = resp.data.message;
+		 					 }
+						 } else {
+							 $scope.valid.message = "Access Invalid Credentials"
+						 }
 
-					 if (resp.data.data.hasOwnProperty('password')) {
-						 $scope.valid.message = resp.data.data.password.notMatch;
-					 }
-					 if (resp.data.data.hasOwnProperty('message')) {
-						 $scope.valid.message = resp.data.data.message;
-					 }
 					});
 				} else {
 					$scope.showAlert();
@@ -77,7 +88,16 @@
     $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter,
 		 $ionicModal,SockService,userData,StorageService)
 		{
-
+				// An alert dialog
+				 $scope.showAlert = function(message) {
+				 	var alertPopup = $ionicPopup.alert({
+					 title: 'Oops...',
+					 template: message
+				 });
+				 alertPopup.then(function(res) {
+					 //console.log('Thank you for not eating my delicious ice cream cone');
+				 });
+				};
 				var room = $stateParams.list? $stateParams.list : StorageService.getRoom();
 				var msgSocket = SockService.connect();
 				if(!$scope.messages || $scope.messages === undefined) {
@@ -93,6 +113,11 @@
 						$scope.$apply();
 					});
 					msgSocket.on('image', function(resp) {
+						console.log(resp);
+						if (resp.from.id === userData.id) {
+							console.log(resp);
+								$scope.doneLoading = true;
+						}
 						$scope.messages.push(resp);
 						$scope.$apply();
 					});
@@ -134,15 +159,6 @@
 			}
 		});
 
-		// $scope.$on('$ionicView.beforeLeave', function () {
-		// 	if (!$scope.input.message || $scope.input.message === '') {
-		// 		//localStorage.removeItem('userMessage-' + $scope.toUser._id);
-		// 	}
-		// });
-
-		// function getMessages() {
-		//
-		// }
 
 		$scope.$watch('input.message', function (newValue, oldValue) {
 			//console.log('input.message $watch, newValue ' + newValue);
@@ -158,23 +174,34 @@
 
 		$scope.sendPhoto = function (e) {
 			var msg ={};
+			var fileTypes = ['jpg', 'jpeg', 'png', 'ico'];
 			if(e && e.files && e.files.length > 0) {
-				var file = e.files[0];
-				var reader = new FileReader();
-				reader.onload = function(evt){
+				$scope.doneLoading = false;
+				var extension = e.files[0].name.split('.').pop().toLowerCase(),  //file extension from input file
+					 isSuccess = fileTypes.indexOf(extension) > -1;  //is extension in acceptable types
 
-				msg.image = evt.target.result;
-				msg.image_name = file.name;
-				msg.user = {
-					firstName:userData.firstName,
-					id:userData.id,
-					imageUrl:userData.imageUrl
-				}
-				msgSocket.emit('image', msg);
-			};
-			if(msg!=={}){
-				reader.readAsDataURL(file);
-			}
+			 if (isSuccess) {
+				 var file = e.files[0];
+				 var reader = new FileReader();
+				 reader.onload = function(evt){
+
+					 msg.image = evt.target.result;
+					 msg.image_name = file.name;
+					 msg.user = {
+						 firstName:userData.firstName,
+						 id:userData.id,
+						 imageUrl:userData.imageUrl
+					 }
+					 msgSocket.emit('image', msg);
+
+				 };
+				 if(msg!=={}){
+					 reader.readAsDataURL(file);
+				 }
+			 } else {
+				 $scope.doneLoading = true;
+ 				 $scope.showAlert('File type is not supported');
+			 }
 			}
 
 		};
