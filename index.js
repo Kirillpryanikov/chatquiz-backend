@@ -31,7 +31,7 @@ app.use('/', (req, res) => {
 
 io.sockets.on('connection', function (socket) {
 
-  var userid = socket.handshake.query.userid;
+    var userid = socket.handshake.query.userid;
 
     socket.on('room', function (room) {
         let currentRoom = room;
@@ -46,40 +46,39 @@ io.sockets.on('connection', function (socket) {
         });
 
         socket.on('image', data => {
-            let msg = {
-                message: data.message,
-                image: data.image,
-                imageName: data.image_name,
-                from: data.user,
-                time: new Date()
-            };
-            io.sockets.in(room).emit('image', msg);
-        });
-
-        socket.on('checktoken', data => {
-            let token = data.handshake.query.token;
+            let token = data.token;
             let options = {
-              uri: 'https://apidev.growish.com/v1/check-token/',
-              headers: {
-                 'User-Agent': 'Request-Promise',
-                 'x-app-key': '1234567890',
-                 'x-auth-token': token,
-              }
+                uri: 'https://apidev.growish.com/v1/check-token/',
+                headers: {
+                    'User-Agent': 'Request-Promise',
+                    'x-app-key': '1234567890',
+                    'x-auth-token': token,
+                },
+                form: {
+                    file: data.image
+                }
             };
 
-            rp(options).then(data => {
-              let msg = {
-                access: true
-              };
-              io.sockets.in(room).emit('checktoken', msg);
+            rp(options).then(image => {
+                let msg = {
+                    message: data.message,
+                    image: image.imageUrl,
+                    from: data.user,
+                    time: new Date()
+                };
+                io.sockets.in(room).emit('image', msg);
             }).catch(e => {
-              let msg = {
-                access: false
-              };
-              io.sockets.in(room).emit('checktoken', msg);
+                let msg = {
+                    message: data.message,
+                    image: data.image,
+                    imageName: data.image_name,
+                    from: data.user,
+                    time: new Date()
+                };
             });
-
         });
+
+
         socket.on('disconnect', function (room) {
             socket.leave(room);
         });
