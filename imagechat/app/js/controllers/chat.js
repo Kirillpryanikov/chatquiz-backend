@@ -187,6 +187,7 @@
 
 					 msg.image = evt.target.result;
 					 msg.image_name = file.name;
+					 msg.token = userData.token;
 					 msg.user = {
 						 firstName:userData.firstName,
 						 id:userData.id,
