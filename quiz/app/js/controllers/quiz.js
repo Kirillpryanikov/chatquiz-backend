@@ -146,7 +146,7 @@
 				}
 			});
 		}
-		$scope.sabmitData = function() {
+		$scope.submitData = function() {
 			$scope.doneLoading = true;
 
 			$scope.submited = true;
