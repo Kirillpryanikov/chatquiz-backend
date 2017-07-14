@@ -113,7 +113,7 @@
 						$scope.$apply();
 					});
 					msgSocket.on('image', function(resp) {
-						console.log(resp);
+						console.log('image',resp);
 						if (resp.from.id === userData.id) {
 							console.log(resp);
 								$scope.doneLoading = true;

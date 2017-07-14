@@ -7,8 +7,9 @@ const logger = require('./config/logger');
 const request = require('request');
 const cors = require('cors');
 const rp = require('request-promise');
-
+const fs = require('fs');
 const socketIO = require('socket.io');
+const stream = require('stream');
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -48,15 +49,23 @@ io.sockets.on('connection', function (socket) {
         socket.on('image', data => {
             let token = data.token;
             let options = {
-                uri: 'https://apidev.growish.com/v1/check-token/',
+              method: 'POST',
+                uri: `https://apidev.growish.com/v1/list/${room}/chat-image-upload/`,
                 headers: {
                     'User-Agent': 'Request-Promise',
                     'x-app-key': '1234567890',
-                    'x-auth-token': token,
+                    'x-auth-token': token
                 },
-                form: {
-                    file: data.image
-                }
+                formData: {
+                   //  file: new Buffer(data.image, 'base64')
+
+                   file: {
+                       value: new Buffer(data.image, 'base64'),
+                       options: {
+                           filename: data.image_name.toString()
+                       }
+                   }
+               }
             };
 
             rp(options).then(image => {
@@ -66,6 +75,7 @@ io.sockets.on('connection', function (socket) {
                     from: data.user,
                     time: new Date()
                 };
+                console.log(image);
                 io.sockets.in(room).emit('image', msg);
             }).catch(e => {
                 let msg = {
@@ -75,6 +85,7 @@ io.sockets.on('connection', function (socket) {
                     from: data.user,
                     time: new Date()
                 };
+                console.log(e);
             });
         });
 
