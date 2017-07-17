@@ -82,6 +82,7 @@ io.sockets.on('connection', function (socket) {
                 io.sockets.in(room).emit('image', msg);
                 fs.unlinkSync(data.image_name.toString());
             }).catch(e => {
+
                 let msg = {
                     message: data.message,
                     image: data.image,
