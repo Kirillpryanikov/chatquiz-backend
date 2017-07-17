@@ -113,7 +113,7 @@
 						$scope.$apply();
 					});
 					msgSocket.on('image', function(resp) {
-						//console.log('image',resp);
+						//console.log('image',resp,'userData',userData);
 						if (resp.from.id === userData.id) {
 						//	console.log(resp);
 								$scope.doneLoading = true;
@@ -173,10 +173,12 @@
 		var lastPhoto = 'img/donut.png';
 
 		$scope.sendPhoto = function (e) {
+			$scope.doneLoading = false;
 			var msg ={};
 			var fileTypes = ['jpg', 'jpeg', 'png', 'ico'];
 			if(e && e.files && e.files.length > 0) {
-				$scope.doneLoading = false;
+				//console.log('doneLoading',$scope.doneLoading);
+				$scope.$apply();
 				var extension = e.files[0].name.split('.').pop().toLowerCase(),  //file extension from input file
 					 isSuccess = fileTypes.indexOf(extension) > -1;  //is extension in acceptable types
 
@@ -200,10 +202,13 @@
 					 reader.readAsDataURL(file);
 				 }
 			 } else {
+				 //console.log('isSuccess else');
 				 $scope.doneLoading = true;
  				 $scope.showAlert('File type is not supported');
 			 }
-			}
+		 } else {
+			 $scope.doneLoading = true;
+		 }
 
 		};
 
