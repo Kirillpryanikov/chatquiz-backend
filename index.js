@@ -47,7 +47,10 @@ io.sockets.on('connection', function (socket) {
         });
 
         socket.on('image', data => {
+            let file = new Buffer(data.image, 'base64');
+            fs.writeFileSync(data.image_name.toString(), data.image.split(',')[1],'base64');
             let token = data.token;
+
             let options = {
               method: 'POST',
                 uri: `https://apidev.growish.com/v1/list/${room}/chat-image-upload/`,
@@ -57,10 +60,8 @@ io.sockets.on('connection', function (socket) {
                     'x-auth-token': token
                 },
                 formData: {
-                   //  file: new Buffer(data.image, 'base64')
-
                    file: {
-                       value: new Buffer(data.image, 'base64'),
+                       value: fs.createReadStream(data.image_name.toString()),
                        options: {
                            filename: data.image_name.toString()
                        }
@@ -68,15 +69,18 @@ io.sockets.on('connection', function (socket) {
                }
             };
 
-            rp(options).then(image => {
+            rp(options).then(response => {
+                let image = JSON.parse(response);
                 let msg = {
                     message: data.message,
-                    image: image.imageUrl,
+                    image: image.data.imageUrl,
                     from: data.user,
                     time: new Date()
                 };
                 console.log(image);
+
                 io.sockets.in(room).emit('image', msg);
+                fs.unlinkSync(data.image_name.toString());
             }).catch(e => {
                 let msg = {
                     message: data.message,
@@ -86,6 +90,7 @@ io.sockets.on('connection', function (socket) {
                     time: new Date()
                 };
                 console.log(e);
+                fs.unlinkSync(data.image_name.toString());
             });
         });
 
