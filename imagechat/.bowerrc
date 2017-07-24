@@ -1,5 +1,5 @@
 {
-  "directory": "../dist/imagechat/lib",
+  "directory": "../dist/imagechat/lib/",
   "ignoredDependencies": [
     "angular",
     "angular-animate",

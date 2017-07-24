@@ -77,7 +77,7 @@ io.sockets.on('connection', function (socket) {
                     from: data.user,
                     time: new Date()
                 };
-                console.log(image);
+                //console.log(image);
 
                 io.sockets.in(room).emit('image', msg);
                 fs.unlinkSync(data.image_name.toString());
