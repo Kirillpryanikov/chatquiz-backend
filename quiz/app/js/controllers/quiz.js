@@ -96,7 +96,7 @@
 			.then(function(resp){
 				$scope.doneLoading = false;
 				$scope.quizs = resp.data.data;
-				console.log($scope.quizs);
+				//console.log($scope.quizs);
 
 			})
 			.catch(function(resp){
