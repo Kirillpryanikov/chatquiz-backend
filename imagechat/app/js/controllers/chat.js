@@ -43,7 +43,7 @@
 
 			$scope.valid={
 				password:false,
-				message:fals
+				message:false
 			};
 			$scope.login = function(form,data){
 				$scope.doneLoading = true;
