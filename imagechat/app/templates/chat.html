@@ -16,7 +16,7 @@
 
 				<div class="chat-bubble left">
 
-					<img ng-click="photoBrowser(message)" ng-if="message.image" src="{{message.image}}" ng-success="refreshScroll(scrollDown)"
+					<img ng-click="photoBrowser(message)" ng-if="message.image"ng-src="{{message.image}}" ng-success="refreshScroll(scrollDown)"
 					/>
 					<div ng-if="!message.image" class="message" ng-bind-html="message.message | nl2br" autolinker>
 					</div>
