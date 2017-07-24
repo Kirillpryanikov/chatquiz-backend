@@ -1,6 +1,26 @@
 #ChatQuiz app
 
 ---
+## Front
+```
+npm install
+npm install -g gulp (if needed)
+gulp
+```
+## Important !
+
+If bowert dependencies were not installed with postinstall in package.json,do it manually
+
+```
+cd quiz
+bower install
+cd ../imagechat
+bower install
+```
+http://localhost:8080/quiz/#/:room/quiz
+http://localhost:8080/imagechat/#/:room/chat
+
+
 ## Server
 For local development:
 
@@ -25,22 +45,3 @@ To restart server:
 To show status:
 
 `npm run status:pm2`
-
-## Front
-```
-npm install
-npm install -g gulp (if needed)
-gulp
-```
-## Important !
-
-If bowert dependencies were not installed with postinstall in package.json,do it manually
-
-```
-cd quiz
-bower install
-cd ../imagechat
-bower install
-```
-http://localhost:8080/quiz/#/:room/quiz
-http://localhost:8080/imagechat/#/:room/chat
