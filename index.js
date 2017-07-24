@@ -20,6 +20,7 @@ app.use(cors());
 
 app.use(express.static(__dirname + '/dist'));
 
+
 logger.debug("Overriding 'Express' logger");
 app.use(require('morgan')('combined', {
     "stream": logger.stream
