@@ -1,6 +1,10 @@
 h1,h2,h3,h4,h5,p,span,div,input, button, select, textarea {
   font-family: 'Lato', sans-serif !important;
 }
+.loader-center {
+    z-index: 99999;
+    position: relative;
+}
 .homeView{
     /* allows the bar-footer to be elastic /*
     /* optionally set a max-height */

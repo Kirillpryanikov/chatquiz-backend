@@ -8,7 +8,7 @@
 		on-scroll="checkScroll()">
 
 		<div ng-repeat="message in messages" class="message-wrapper" ng-init="$last && refreshScroll(user.id === message.from.id)"
-			on-hold="onMessageHold($event, $index, message)">
+			on-hold="onMessageHold($event, $index, message)" ng-if="!message.errors">
 
 			<div ng-if="user.id !== message.from.id">
 

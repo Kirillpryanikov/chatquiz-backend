@@ -416,7 +416,7 @@ angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate', 'monospaced.ela
               return user;
             } else {
               if($stateParams.list){
-                console.log('setRoom',$stateParams.list);
+                //console.log('setRoom',$stateParams.list);
                 StorageService.setRoom($stateParams.list)
               }
               $location.path('login');

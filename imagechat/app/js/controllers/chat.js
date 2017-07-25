@@ -114,8 +114,13 @@
 					});
 					msgSocket.on('image', function(resp) {
 						//console.log('image',resp,'userData',userData);
-						if (resp.from.id === userData.id) {
+						if (resp.from.id === userData.id ) {
 						//	console.log(resp);
+								if(resp.errors) {
+                                    $scope.doneLoading = true;
+                                    $scope.showAlert('Error include image');
+                                    //console.log(resp);
+                                }
 								$scope.doneLoading = true;
 						}
 						$scope.messages.push(resp);

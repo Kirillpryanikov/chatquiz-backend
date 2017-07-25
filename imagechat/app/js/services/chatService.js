@@ -11,7 +11,7 @@
         function SockService(StorageService,$http, $q,$window,$state,BaseURL) {
           var me={};
           var apiUrl = BaseURL;
-          console.log(BaseURL);
+          //console.log(BaseURL);
           var user = StorageService.getAuthData();
           // var socketquery = {
           //   query: String(user)

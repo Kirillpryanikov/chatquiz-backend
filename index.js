@@ -85,13 +85,12 @@ io.sockets.on('connection', function (socket) {
             }).catch(e => {
 
                 let msg = {
-                    message: data.message,
-                    image: data.image,
-                    imageName: data.image_name,
                     from: data.user,
+                    errors:true,
                     time: new Date()
                 };
-                console.log(e);
+               // console.log(e);
+                io.sockets.in(room).emit('image', msg);
                 fs.unlinkSync(data.image_name.toString());
             });
         });
