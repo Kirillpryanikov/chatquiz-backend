@@ -114,7 +114,7 @@ function MinifyTemplates(path, destPath) {
     .pipe(gulp.dest(destPath));
 }
 
-gulp.task('templates', ['clean-templates'], function () {
+gulp.task('templates', function () {
   return paths.map(function(path){
     return MinifyTemplates(path.templates, path.destTemplates);
   })
