@@ -91,7 +91,7 @@ io.sockets.on('connection', function (socket) {
 
                 let msg = {
                     from: data.user,
-                    errors:true,
+                    errors:e,
                     time: new Date()
                 };
                // console.log(e);
