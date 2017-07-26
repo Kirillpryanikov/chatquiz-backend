@@ -15,6 +15,14 @@
           me.getAuthData = function() {
             return JSON.parse($window.localStorage['_user'] || '{}');
           }
+          me.setRoom = function (value) {
+            $window.localStorage['_quizroom'] = JSON.stringify(value);
+          }
+          me.getRoom = function() {
+
+            return JSON.parse($window.localStorage['_quizroom'] || '{}');
+          }
+
 
           return me;
         };

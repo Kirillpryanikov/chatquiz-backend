@@ -9,11 +9,16 @@
 	MainCtrl.$inject = ['$scope', '$rootScope', '$state',
   '$stateParams', 'ChatService','StorageService',
   '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
-  '$ionicActionSheet', '$filter', '$ionicModal','$q'];
+  '$ionicActionSheet', '$filter', '$ionicModal','$q','$location'];
 
 	function MainCtrl($scope, $rootScope, $state, $stateParams, ChatService,StorageService,
-    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q, userData)
+    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q, $location)
 		 {
+			 var userData = StorageService.getAuthData();
+			 if(!userData || !userData.hasOwnProperty('token')) {
+					//ApiService.logOut();
+					$location.path('login');
+				}
 			 $scope.logout = function() {
 				 ChatService.logOut();
 			 }
@@ -70,11 +75,15 @@
 		 					 }
 						 } else {
 							 $scope.valid.message = "Access Invalid Credentials"
+							 $scope.doneLoading = false;
+							 
 						 }
 
 					});
 				} else {
 					$scope.showAlert();
+					$scope.doneLoading = false;
+
 				}
 			}
 		}
@@ -117,10 +126,10 @@
 						if (resp.from.id === userData.id ) {
 						//	console.log(resp);
 								if(resp.errors) {
-                                    $scope.doneLoading = true;
-                                    $scope.showAlert('Error include image');
-                                    //console.log(resp);
-                                }
+                    $scope.doneLoading = true;
+                    $scope.showAlert('Error include image');
+                    //console.log(resp);
+                }
 								$scope.doneLoading = true;
 						}
 						$scope.messages.push(resp);

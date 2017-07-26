@@ -266,7 +266,7 @@ angular.module('App', ['ionic', 'ngAnimate', 'monospaced.elastic', 'angularMomen
    IMPORT_GUESTS_PARAGRAPH1: 'Scarica il modello di excel che abbiamo preparato per te.',
    IMPORT_GUESTS_PARAGRAPH2: 'Compila il file con i dati dei tuoi invitati.',
    IMPORT_GUESTS_PARAGRAPH3: 'E\' importante che il file sia in formato',
-   IMPORT_GUESTS_PARAGRAPH4: 'Importa il file, potrai visualizzarlo prima di salvare le modifiche.',
+   IMPORT_GUESTS_PARAGRAPH4: 'Importa il file, potrai visualizzaloginrlo prima di salvare le modifiche.',
    WEDDING_LIST_ACTIVATE: 'Attiva la lista per renderla visibile agli invitati ed incassare gli importi raccolti. Nessun costo di attivazione. Potrai aggiungere ulteriori desideri anche dopo l’attivazione.',
    WEDDING_LIST_AGENCY_ACTIVATE: 'Per attivare la tua lista nozze, devi accettare i Termini e le Condizioni del Contratto e caricare un tuo Documento di Identità, se non hai ancora provveduto al momento della creazione della lista presso l\'Agenzia.',
    YOUR_TRAVEL: 'Il tuo viaggio',
@@ -394,11 +394,17 @@ angular.module('App', ['ionic', 'ngAnimate', 'monospaced.elastic', 'angularMomen
             templateUrl: "templates/quiz.html",
             controller: 'QuizController',
             resolve: {
-              userData: ['StorageService', '$location', function (StorageService, $location) {
+              userData: ['StorageService', '$location', '$stateParams', function (StorageService, $location, $stateParams) {
                 var user = StorageService.getAuthData();
+
                 if(user.token) {
                   return user;
                 } else {
+                  if($stateParams.list){
+                    //console.log('setRoom',$stateParams.list);
+                    StorageService.setRoom($stateParams.list)
+                  }
+                  ApiService.logOut();
                   $location.path('login');
                 }
               }]

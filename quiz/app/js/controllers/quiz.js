@@ -9,11 +9,16 @@
 		MainCtrl.$inject = ['$scope', '$rootScope', '$state',
 	  '$stateParams', 'ApiService','StorageService',
 	  '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
-	  '$ionicActionSheet', '$filter', '$ionicModal','$q'];
+	  '$ionicActionSheet', '$filter', '$ionicModal','$q','$location'];
 
 		function MainCtrl($scope, $rootScope, $state, $stateParams, ApiService,StorageService,
-	    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q, userData)
+	    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q,$location)
 			 {
+				 var userData = StorageService.getAuthData();
+				 if(!userData || !userData.hasOwnProperty('token')) {
+	 					//ApiService.logOut();
+						$location.path('login');
+	 				}
 				 $scope.logout = function() {
 					 ApiService.logOut();
 				 }
@@ -44,17 +49,19 @@
 				 message:false
 			 };
 			 $scope.login = function(form,data) {
+
 				 $scope.doneLoading = true;
+				 var room = $stateParams.list? $stateParams.list : StorageService.getRoom();
+
 				 if(form.$valid) {
 				 	ApiService.login(data)
 					 .then(function(resp) {
 						 	resp.data = resp.data.data? resp.data.data : resp.data;
 						 	StorageService.setAuthData(resp.data);
 							$scope.doneLoading = false;
-  						$state.go('quiz');
+  						$state.go('quiz',{list:room});
 					 })
 					 .catch(function(resp){
-						 $scope.doneLoading = false;
 						 $scope.doneLoading = false;
 						 resp.data = resp.data.data? resp.data.data:resp.data;
 						 if(resp.status !== 404) {
@@ -66,19 +73,24 @@
 	 	 					}
 	 					} else {
  						 	$scope.valid.message = "Access Invalid Credentials"
+							$scope.doneLoading = false;
+
  					 	}
 					 });
 				 } else {
+					 $scope.doneLoading = false;
+
 				 	 $scope.showAlert();
+
 				 }
 			 }
 			}
 		// main chat ctrl
 	QuizController.$inject = ['$location','$scope', '$rootScope', '$state', '$stateParams', 'ApiService',
   '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
-  '$ionicActionSheet', '$filter', '$ionicModal','$q'];
+  '$ionicActionSheet', '$filter', '$ionicModal','$q','userData'];
 	function QuizController( $location,$scope, $rootScope, $state, $stateParams, ApiService,
-    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal,$q) {
+    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal,$q,userData) {
 
 		$scope.goTo = function(id){
 			//console.log('quiz'+id);
@@ -86,10 +98,12 @@
      $ionicScrollDelegate.anchorScroll(true);
 	 	}
 
-		var listId =  $stateParams.list;
+		var listId = $stateParams.list? $stateParams.list : StorageService.getRoom();
+
 		$scope.optlabel = ["A","B","C","D","G","E"];
 
 		var init = function() {
+
 			$scope.doneLoading = true;
 
 			ApiService.getQuizs(listId)
