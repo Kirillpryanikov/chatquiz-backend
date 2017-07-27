@@ -8,27 +8,23 @@
         function StorageService($window) {
           var me={};
           me.setAuthData = function (value) {
-            $window.localStorage.setItem('_user', JSON.stringify(value));
+            $window.localStorage['_user'] = JSON.stringify(value);
           }
-
           me.getAuthData = function() {
-            return JSON.parse($window.localStorage.getItem('_user') || '{}');
+            return JSON.parse($window.localStorage['_user'] || '{}');
           }
           me.setRoom = function (value) {
             $window.localStorage.setItem('_quizroom', value);
           }
           me.getRoom = function() {
-            onsole.log($window.localStorage.getItem('_quizroom'));
             return $window.localStorage.getItem('_quizroom') || '';
           }
-
 
           return me;
         };
     function ApiService($http, $q, $window,$state, BaseURL) {
         var me = {};
         var apiUrl = BaseURL;
-        console.log(BaseURL);
         me.login = function(data){
           var endpoint = "auth/"
           return $http({
@@ -52,7 +48,6 @@
           return $http.get(apiUrl+endpoint);
         }
         me.setQuizs = function(data,listId){
-          console.log('seе',data,listId);
           var sdata = JSON.stringify(data);
           var endpoint = 'list/'+listId+"/quiz-answers/"
           return $http({

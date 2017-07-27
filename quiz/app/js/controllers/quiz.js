@@ -14,25 +14,25 @@
 		function MainCtrl($scope, $rootScope, $state, $stateParams, ApiService,StorageService,
 	    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q,$location)
 			 {
-				 $scope.rootScope = StorageService.getAuthData();
+				 $rootScope.usr = StorageService.getAuthData();
 
-				 if(!$rootScope.userData || !$rootScope.userData.hasOwnProperty('token')) {
+				 if(!$rootScope.usr || !$rootScope.usr.hasOwnProperty('token')) {
 						//ApiService.logOut();
 						$location.path('login');
 					}
 				 $scope.logout = function() {
 					 ApiService.logOut();
-					 $rootScope.userData = false;
+					 $rootScope.usr = false;
 				 }
 			}
 		// main chat ctrl
 		LoginCtrl.$inject = ['$scope', '$rootScope', '$state',
 	  '$stateParams', 'ApiService','StorageService',
 	  '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
-	  '$ionicActionSheet', '$filter', '$ionicModal','$q', 'userData'];
+	  '$ionicActionSheet', '$filter', '$ionicModal','$q'];
 
 		function LoginCtrl($scope, $rootScope, $state, $stateParams, ApiService,StorageService,
-	    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q, userData)
+	    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q)
 			 {
 				$scope.data = {};
 				// An alert dialog
@@ -60,9 +60,9 @@
 					 .then(function(resp) {
 						 	resp.data = resp.data.data? resp.data.data : resp.data;
 						 	StorageService.setAuthData(resp.data);
-							$rootScope.userData = resp.data;
+							$rootScope.usr = resp.data;
 							$scope.doneLoading = false;
-							console.log(room);
+
   						$state.go('quiz',{list:room});
 					 })
 					 .catch(function(resp){
@@ -92,9 +92,9 @@
 		// main chat ctrl
 	QuizController.$inject = ['$location','$scope', '$rootScope', '$state', '$stateParams', 'ApiService',
   '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
-  '$ionicActionSheet', '$filter', '$ionicModal','$q','userData'];
+  '$ionicActionSheet', '$filter', '$ionicModal','$q','StorageService'];
 	function QuizController( $location,$scope, $rootScope, $state, $stateParams, ApiService,
-    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal,$q,userData) {
+    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal,$q, StorageService) {
 
 		$scope.goTo = function(id){
 			//console.log('quiz'+id);

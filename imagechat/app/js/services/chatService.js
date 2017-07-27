@@ -5,20 +5,21 @@
         .module('App')
         .factory('ChatService',['$http', '$q','$window','$state','BaseURL', ChatService])
         .factory('StorageService', ['$window', StorageService])
-        .factory('SockService', ['StorageService','$http', '$q','$window','$state','BaseURL', SockService]);
+        .factory('SockService', ['StorageService','$http', '$q','$window','$state','BaseURL', '$rootScope', SockService]);
 
         //socket
-        function SockService(StorageService,$http, $q,$window,$state,BaseURL) {
+        function SockService(StorageService,$http, $q,$window,$state,BaseURL,$rootScope) {
           var me={};
           var apiUrl = BaseURL;
           //console.log(BaseURL);
           var user = StorageService.getAuthData();
-
             me.connect = function () {
-               var sock = io.connect(apiUrl,{transports: ['websocket']});
-        	     return sock;
+              if($rootScope.sock) {
+                $rootScope.sock.disconnect();
+              }
+           $rootScope.sock = io.connect(apiUrl,{transports: ['websocket']});
+    	     return $rootScope.sock;
            }
-
           return me;
         };
         function StorageService($window,$stateParams) {
@@ -27,17 +28,14 @@
             $window.localStorage['_user'] = JSON.stringify(value);
           }
           me.getAuthData = function() {
-
             return JSON.parse($window.localStorage['_user'] || '{}');
           }
           me.setRoom = function (value) {
-            $window.localStorage['_room'] = JSON.stringify(value);
+            $window.localStorage.setItem('_room', value);
           }
           me.getRoom = function() {
-
-            return JSON.parse($window.localStorage['_room'] || '{}');
+            return $window.localStorage.getItem('_room') || '';
           }
-
           return me;
         };
 

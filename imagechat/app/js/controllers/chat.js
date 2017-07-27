@@ -14,15 +14,16 @@
 	function MainCtrl($scope, $rootScope, $state, $stateParams, ChatService,StorageService,
     $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q, $location)
 		 {
-			 $scope.rootScope = StorageService.getAuthData();
+			 $rootScope.usr = StorageService.getAuthData();
 
-			 if(!$rootScope.userData || !$rootScope.userData.hasOwnProperty('token')) {
+			 if(!$rootScope.usr || !$rootScope.usr.hasOwnProperty('token')) {
 					//ApiService.logOut();
 					$location.path('login');
 				}
 			 $scope.logout = function() {
 				 ChatService.logOut();
-				 $rootScope.userData = false;
+
+				 $rootScope.usr = false;
 			 }
 		}
 		// login
@@ -62,7 +63,7 @@
 						//console.log('then',resp);
 							StorageService.setAuthData(resp.data);
 								$scope.doneLoading = false;
-								$rootScope.userData = resp.data;
+								$rootScope.usr = resp.data;
 								$state.go('chat',{list:room});
 					})
 					.catch(function(resp){
@@ -102,6 +103,7 @@
 		{
 				// An alert dialog
 				 $scope.showAlert = function(message) {
+					// console.log('message',message);
 				 	var alertPopup = $ionicPopup.alert({
 					 title: 'Oops...',
 					 template: '<p>'+message+'</p>'
@@ -120,25 +122,20 @@
 				msgSocket.on('connect', function() {
 					msgSocket.emit('room', room);
 					msgSocket.on('message', function(resp) {
-						// console.log('on resp',resp);
+
 						$scope.messages.push(resp);
 						$scope.$apply();
 					});
 					msgSocket.on('image', function(resp) {
-						//console.log('image',resp,'userData',userData);
 						if (resp.from.id === userData.id ) {
-						//	console.log(resp);
 								if(resp.errors) {
                   $scope.doneLoading = true;
-									var formErrors = {};
-                    angular.forEach(resp.errors, function(errors, field) {
-                        angular.forEach(errors, function(msg, error) {
-                            formErrors[field] = msg;
-                        });
-                    });
+
 										var out = '';
-										for (var i in formErrors.message) {
-												out += '<p>' + formErrors.message[i] + "</p>";
+										for (var i in resp.errors.message) {
+											for (var j in resp.errors.message[i]) {
+													out += '<p>' + resp.errors.message[i][j] + "</p>";
+											}
 										}
                   $scope.showAlert(out);
                 }
