@@ -130,12 +130,19 @@
 						if (resp.from.id === userData.id ) {
 								if(resp.errors) {
                   $scope.doneLoading = true;
-
 										var out = '';
-										for (var i in resp.errors.message) {
-											for (var j in resp.errors.message[i]) {
-													out += '<p>' + resp.errors.message[i][j] + "</p>";
+										if(typeof resp.errors.message === 'object') {
+											for (var i in resp.errors.message) {
+												if(typeof resp.errors.message[i] === 'object') {
+													for (var j in resp.errors.message[i]) {
+															out += '<p>' + resp.errors.message[i][j] + "</p>";
+													}
+												}else {
+													out += '<p>' + resp.errors.message + "</p>";
+												}
 											}
+										}else {
+											out += '<p>' + resp.errors.message + "</p>";
 										}
                   $scope.showAlert(out);
                 }
