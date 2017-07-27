@@ -88,13 +88,11 @@ io.sockets.on('connection', function (socket) {
                 io.sockets.in(room).emit('image', msg);
                 fs.unlinkSync(data.image_name.toString());
             }).catch(e => {
-
                 let msg = {
                     from: data.user,
-                    errors:e,
+                    errors:JSON.parse(e.response.body),
                     time: new Date()
                 };
-               // console.log(e);
                 io.sockets.in(room).emit('image', msg);
                 fs.unlinkSync(data.image_name.toString());
             });

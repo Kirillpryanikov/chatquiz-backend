@@ -14,13 +14,15 @@
 		function MainCtrl($scope, $rootScope, $state, $stateParams, ApiService,StorageService,
 	    $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q,$location)
 			 {
-				 var userData = StorageService.getAuthData();
-				 if(!userData || !userData.hasOwnProperty('token')) {
-	 					//ApiService.logOut();
+				 $scope.rootScope = StorageService.getAuthData();
+
+				 if(!$rootScope.userData || !$rootScope.userData.hasOwnProperty('token')) {
+						//ApiService.logOut();
 						$location.path('login');
-	 				}
+					}
 				 $scope.logout = function() {
 					 ApiService.logOut();
+					 $rootScope.userData = false;
 				 }
 			}
 		// main chat ctrl
@@ -58,7 +60,9 @@
 					 .then(function(resp) {
 						 	resp.data = resp.data.data? resp.data.data : resp.data;
 						 	StorageService.setAuthData(resp.data);
+							$rootScope.userData = resp.data;
 							$scope.doneLoading = false;
+							console.log(room);
   						$state.go('quiz',{list:room});
 					 })
 					 .catch(function(resp){

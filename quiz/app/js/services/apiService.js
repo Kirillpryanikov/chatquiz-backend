@@ -8,19 +8,18 @@
         function StorageService($window) {
           var me={};
           me.setAuthData = function (value) {
-            $window.localStorage['_user'] = JSON.stringify(value);
-
+            $window.localStorage.setItem('_user', JSON.stringify(value));
           }
 
           me.getAuthData = function() {
-            return JSON.parse($window.localStorage['_user'] || '{}');
+            return JSON.parse($window.localStorage.getItem('_user') || '{}');
           }
           me.setRoom = function (value) {
-            $window.localStorage['_quizroom'] = JSON.stringify(value);
+            $window.localStorage.setItem('_quizroom', value);
           }
           me.getRoom = function() {
-
-            return JSON.parse($window.localStorage['_quizroom'] || '{}');
+            onsole.log($window.localStorage.getItem('_quizroom'));
+            return $window.localStorage.getItem('_quizroom') || '';
           }
 
 

@@ -13,9 +13,7 @@
           var apiUrl = BaseURL;
           //console.log(BaseURL);
           var user = StorageService.getAuthData();
-          // var socketquery = {
-          //   query: String(user)
-          // };
+
             me.connect = function () {
                var sock = io.connect(apiUrl,{transports: ['websocket']});
         	     return sock;

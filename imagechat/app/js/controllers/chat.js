@@ -14,13 +14,15 @@
 	function MainCtrl($scope, $rootScope, $state, $stateParams, ChatService,StorageService,
     $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q, $location)
 		 {
-			 var userData = StorageService.getAuthData();
-			 if(!userData || !userData.hasOwnProperty('token')) {
+			 $scope.rootScope = StorageService.getAuthData();
+
+			 if(!$rootScope.userData || !$rootScope.userData.hasOwnProperty('token')) {
 					//ApiService.logOut();
 					$location.path('login');
 				}
 			 $scope.logout = function() {
 				 ChatService.logOut();
+				 $rootScope.userData = false;
 			 }
 		}
 		// login
@@ -60,10 +62,11 @@
 						//console.log('then',resp);
 							StorageService.setAuthData(resp.data);
 								$scope.doneLoading = false;
+								$rootScope.userData = resp.data;
 								$state.go('chat',{list:room});
 					})
 					.catch(function(resp){
-						console.log('err',resp);
+						//console.log('err',resp);
 						resp.data = resp.data.data? resp.data.data:resp.data;
 						$scope.doneLoading = false;
 						if(resp.status !== 404) {
@@ -76,7 +79,7 @@
 						 } else {
 							 $scope.valid.message = "Access Invalid Credentials"
 							 $scope.doneLoading = false;
-							 
+
 						 }
 
 					});
@@ -101,7 +104,7 @@
 				 $scope.showAlert = function(message) {
 				 	var alertPopup = $ionicPopup.alert({
 					 title: 'Oops...',
-					 template: message
+					 template: '<p>'+message+'</p>'
 				 });
 				 alertPopup.then(function(res) {
 					 //console.log('Thank you for not eating my delicious ice cream cone');
@@ -126,9 +129,18 @@
 						if (resp.from.id === userData.id ) {
 						//	console.log(resp);
 								if(resp.errors) {
-                    $scope.doneLoading = true;
-                    $scope.showAlert('Error include image');
-                    //console.log(resp);
+                  $scope.doneLoading = true;
+									var formErrors = {};
+                    angular.forEach(resp.errors, function(errors, field) {
+                        angular.forEach(errors, function(msg, error) {
+                            formErrors[field] = msg;
+                        });
+                    });
+										var out = '';
+										for (var i in formErrors.message) {
+												out += '<p>' + formErrors.message[i] + "</p>";
+										}
+                  $scope.showAlert(out);
                 }
 								$scope.doneLoading = true;
 						}

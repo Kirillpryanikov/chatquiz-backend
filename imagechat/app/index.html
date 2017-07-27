@@ -34,11 +34,11 @@
     <!-- your app's js -->
     <script src="build/app.js"></script>
   </head>
-  <body ng-app="App" ng-controller="MainCtrl">
-    <ion-nav-bar class="bar-dark" no-tap-scroll="false">
+  <body ng-app="App" >
+    <ion-nav-bar class="bar-dark" no-tap-scroll="false" ng-controller="MainCtrl">
       <ion-nav-back-button class="button-icon ion-arrow-left-c">
       </ion-nav-back-button>
-      <button class="button button-clear button-positive"
+      <button class="button button-clear button-positive" ng-if="userData.token"
       id="logout" ng-click="logout()" translate="LOGOUT"></button>
     </ion-nav-bar>
     <ion-nav-view animation="slide-left-right">
