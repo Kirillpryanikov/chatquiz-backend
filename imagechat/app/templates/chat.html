@@ -7,7 +7,7 @@
 	<ion-content overflow-scroll="false" has-bouncing="true" class="has-header has-footer" delegate-handle="userMessageScroll"
 		on-scroll="checkScroll()">
 
-		<div ng-repeat="message in messages" class="message-wrapper" ng-init="$last && refreshScroll(user.id === message.from.id)"
+		<div ng-repeat="message in messages track by $index" class="message-wrapper" ng-init="$last && refreshScroll(user.id === message.from.id)"
 			on-hold="onMessageHold($event, $index, message)" ng-if="!message.errors">
 
 			<div ng-if="user.id !== message.from.id">
