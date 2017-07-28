@@ -44,7 +44,7 @@ io.sockets.on('connection', function (socket) {
         let currentRoom = room;
         socket.join(room);
         socket.on('message', data => {
-          var token = data.token;
+          var token = data.user.token;
           var options = {
               uri: 'https://apidev.growish.com/v1/check-token/',
               headers: {
