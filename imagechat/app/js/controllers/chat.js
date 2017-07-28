@@ -203,7 +203,6 @@
 		});
 
 		var addMessage = function (message) {
-			console.log(message);
 			msgSocket.emit('message', message);
 		};
 
