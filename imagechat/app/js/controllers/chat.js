@@ -18,7 +18,8 @@
 
 			 if(!$rootScope.usr || !$rootScope.usr.hasOwnProperty('token')) {
 					//ApiService.logOut();
-					$location.path('login');
+					//StorageService.setRoom()
+					//$location.path('login');
 				}
 			 $scope.logout = function() {
 				 ChatService.logOut();
