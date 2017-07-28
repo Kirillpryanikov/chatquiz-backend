@@ -122,7 +122,14 @@
 				msgSocket.on('connect', function() {
 					msgSocket.emit('room', room);
 					msgSocket.on('message', function(resp) {
-
+						if (resp.from.id === userData.id ) {
+								if(resp.errors) {
+									$scope.doneLoading = true;
+									$scope.showAlert(resp.errors);
+									ChatService.logOut();
+								}
+						}
+						//console.log(resp);
 						$scope.messages.push(resp);
 						$scope.$apply();
 					});
@@ -196,7 +203,7 @@
 		});
 
 		var addMessage = function (message) {
-
+			console.log(message);
 			msgSocket.emit('message', message);
 		};
 
@@ -249,7 +256,8 @@
 				user: {
 					firstName:userData.firstName,
 					id:userData.id,
-					imageUrl:userData.imageUrl
+					imageUrl:userData.imageUrl,
+					token:userData.token
 				}
 			};
 

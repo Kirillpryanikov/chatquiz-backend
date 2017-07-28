@@ -44,12 +44,34 @@ io.sockets.on('connection', function (socket) {
         let currentRoom = room;
         socket.join(room);
         socket.on('message', data => {
+          var token = data.token;
+          var options = {
+              uri: 'https://apidev.growish.com/v1/check-token/',
+              headers: {
+                  'User-Agent': 'Request-Promise',
+                  'x-app-key': '1234567890',
+                  'x-auth-token': token
+              },
+              json: true // Automatically parses the JSON string in the response
+          };
+
+          rp(options)
+              .then(function (repos) {
+                  //console.log('check', repos);
+                  io.sockets.in(room).emit('message', msg);
+
+              })
+              .catch(function (err) {
+                //console.log('check', err.response.body.message);
+                msg.errors = err.response.body.message;
+                io.sockets.in(room).emit('message', msg);
+              });
             let msg = {
                 message: data.message,
                 from: data.user,
                 time: new Date()
             };
-            io.sockets.in(room).emit('message', msg);
+
         });
 
         socket.on('image', data => {
