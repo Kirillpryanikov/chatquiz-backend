@@ -16,10 +16,6 @@
 			 {
 				 $rootScope.usr = StorageService.getAuthData();
 
-				 if(!$rootScope.usr || !$rootScope.usr.hasOwnProperty('token')) {
-						//ApiService.logOut();
-						$location.path('login');
-					}
 				 $scope.logout = function() {
 					 ApiService.logOut();
 					 $rootScope.usr = false;

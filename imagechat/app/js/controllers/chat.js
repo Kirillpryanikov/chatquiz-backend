@@ -16,12 +16,7 @@
 		 {
 			 $rootScope.usr = StorageService.getAuthData();
 
-			 if(!$rootScope.usr || !$rootScope.usr.hasOwnProperty('token')) {
-					//ApiService.logOut();
-					//StorageService.setRoom()
-					//$location.path('login');
-				}
-			 $scope.logout = function() {
+			 	$scope.logout = function() {
 				 ChatService.logOut();
 
 				 $rootScope.usr = false;
