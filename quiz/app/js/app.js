@@ -396,16 +396,15 @@ angular.module('App', ['ionic', 'ngAnimate', 'monospaced.elastic', 'angularMomen
             resolve: {
               userData: ['StorageService', '$location', '$stateParams', function (StorageService, $location, $stateParams) {
                 var user = StorageService.getAuthData();
-
                 if(user.token) {
                   return user;
                 } else {
                   if($stateParams.list){
                     //console.log('setRoom',$stateParams.list);
                     StorageService.setRoom($stateParams.list)
+                    $location.path('login');
                   }
-                  ApiService.logOut();
-                  $location.path('login');
+                  //ApiService.logOut();
                 }
               }]
             }
@@ -417,6 +416,7 @@ angular.module('App', ['ionic', 'ngAnimate', 'monospaced.elastic', 'angularMomen
             controller: 'LoginCtrl',
             resolve: {
               userData: ['StorageService', function (StorageService) {
+                console.log('login state');
                 return StorageService.getAuthData()
               }]
             }

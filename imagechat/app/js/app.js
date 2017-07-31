@@ -418,8 +418,9 @@ angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate', 'monospaced.ela
               if($stateParams.list){
                 //console.log('setRoom',$stateParams.list)
                 StorageService.setRoom($stateParams.list)
+                $location.path('login');
+
               }
-              $location.path('login');
             }
           }]
         }
