@@ -1,6 +1,6 @@
 {
   "apps" : [{
-    "name"        : "ChatQuiz",
+    "name"        : "ChatService",
     "script"      : "./index.js",
     "watch"       : false,
     "env": {
