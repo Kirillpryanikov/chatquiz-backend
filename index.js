@@ -26,11 +26,6 @@ app.use(require('morgan')('combined', {
     "stream": logger.stream
 }));
 
-app.use('/*', (req, res, next) => {
-    console.log(req.url);
-    next();
-});
-
 app.use('/', (req, res) => {
     var url = 'https://apidev.growish.com/v1' + req.url;
     req.pipe(request(url)).pipe(res);
