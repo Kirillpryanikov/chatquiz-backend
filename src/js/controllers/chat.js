@@ -16,7 +16,7 @@
         $rootScope.usr = StorageService.getAuthData();
 
         $scope.logout = function () {
-            ChatService.logOut();
+            ChatService.logOut($stateParams.list);
 
             $rootScope.usr = false;
         }
@@ -28,7 +28,7 @@
         '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
         '$ionicActionSheet', '$filter', '$ionicModal'];
 
-    function LoginCtrl($scope, $rootScope, $state, $stateParams, ChatService, StorageService,
+    function LoginCtrl($scope, $rootScope, $state, $stateParams, ChatService, StorageService, $translate,
                        $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal) {
 
         $scope.data = {};
@@ -37,7 +37,7 @@
         $scope.showAlert = function () {
             var alertPopup = $ionicPopup.alert({
                 title: 'Oops...',
-                template: 'Invalid form data'
+                template: $translate.instant('INVALID_FORM_DATA')
             });
 
             alertPopup.then(function (res) {
@@ -99,10 +99,22 @@
                             $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter,
                             $ionicModal, SockService, userData, StorageService) {
 
+        var _lastWritingEvent = 0;
+
+        $scope.writingNow = [];
+
         var blopFx = new Howl({
             src: ['sound/blop.mp3']
         });
 
+        $scope.writing = function () {
+            var _now = Date.now();
+          if($scope.input.message && $scope.input.message.length > 0 && (_now - _lastWritingEvent > 5000)) {
+              msgSocket.emit('writing', {id: userData.id, firstName: userData.firstName });
+              _lastWritingEvent = _now;
+          }
+
+        };
 
         $scope.showAlert = function (message) {
             // console.log('message',message);
@@ -114,24 +126,34 @@
                 //console.log('Thank you for not eating my delicious ice cream cone');
             });
         };
+
         var room = $stateParams.list ? $stateParams.list : StorageService.getRoom();
+
         var msgSocket = SockService.connect();
         if (!$scope.messages || $scope.messages === undefined) {
             $scope.messages = [];
             $scope.doneLoading = true;
         }
 
+        var removeFromWritingNow = function (u) {
+            angular.forEach($scope.writingNow, function(user, key) {
+                if (user.id === u.id) {
+                    $scope.writingNow.splice(key, 1);
+                }
+            });
+        };
 
         msgSocket.on('connect', function () {
 
             msgSocket.emit('room', room);
 
             msgSocket.on('message', function (resp) {
+
                 if (resp.from.id === userData.id) {
                     if (resp.errors) {
                         $scope.doneLoading = true;
                         $scope.showAlert(resp.errors);
-                        ChatService.logOut();
+                        ChatService.logOut($stateParams.list);
                     }
                 }
 
@@ -141,6 +163,29 @@
                 $scope.messages.push(resp);
                 $scope.$apply();
                 blopFx.play();
+            });
+
+            msgSocket.on('writing', function (u) {
+
+                if(u.id === userData.id)
+                    return false;
+
+                u.timerId = $timeout(function() { removeFromWritingNow(u) }, 6000);
+
+                if($scope.writingNow.length === 0)
+                    $scope.writingNow.push(u);
+                else
+                    angular.forEach($scope.writingNow, function(user, key) {
+                        if(user.id === u.id)
+                        {
+                            $timeout.cancel(user.timerId);
+                            user.timerId = u.timerId;
+                            return false;
+                        }
+                        if(key === $scope.writingNow.length)
+                            $scope.writingNow.push(u);
+                    });
+
             });
 
             msgSocket.on('image', function (resp) {
@@ -216,8 +261,6 @@
         var addMessage = function (message) {
             msgSocket.emit('message', message);
         };
-
-        var lastPhoto = 'img/donut.png';
 
         $scope.sendPhoto = function (e) {
             $scope.doneLoading = false;
@@ -307,10 +350,15 @@
         $scope.scrollDown = true;
         $scope.checkScroll = function () {
             $timeout(function () {
-                var currentTop = viewScroll.getScrollPosition().top;
-                var maxScrollableDistanceFromTop = viewScroll.getScrollView().__maxScrollTop;
-                $scope.scrollDown = (currentTop >= maxScrollableDistanceFromTop);
-                $scope.$apply();
+
+                try {
+                    var currentTop = viewScroll.getScrollPosition().top;
+                    var maxScrollableDistanceFromTop = viewScroll.getScrollView().__maxScrollTop;
+                    $scope.scrollDown = (currentTop >= maxScrollableDistanceFromTop);
+                    $scope.$apply();
+                }
+                catch (e) {}
+
             }, 0);
             return true;
         };
@@ -338,34 +386,6 @@
 
         $scope.closeModal = function () {
             $scope.modal.remove();
-        };
-
-        $scope.onMessageHold = function (e, itemIndex, message) {
-            $ionicActionSheet.show({
-                buttons: [{
-                    text: 'Copy Text'
-                }, {
-                    text: 'Delete Message'
-                }],
-                buttonClicked: function (index) {
-                    switch (index) {
-                        case 0: // Copy Text
-                            //cordova.plugins.clipboard.copy(message.text);
-
-                            break;
-                        case 1: // Delete
-                            // no server side secrets here :~)
-                            $scope.messages.splice(itemIndex, 1);
-                            $timeout(function () {
-                                viewScroll.resize();
-                            }, 0);
-
-                            break;
-                    }
-
-                    return true;
-                }
-            });
         };
 
         $scope.$on('elastic:resize', function (event, element, oldHeight, newHeight) {

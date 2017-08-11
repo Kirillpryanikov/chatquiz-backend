@@ -14,17 +14,17 @@
               ng-class="{ 'has-error' : loginForm.email.$invalid && !loginForm.email.$pristine }" required>
           </label>
 
-          <p ng-show="loginForm.email.$invalid && !loginForm.email.$pristine || valid.email" class="help-block">Your email is required.</p>
+          <p ng-show="loginForm.email.$invalid && !loginForm.email.$pristine || valid.email" class="help-block">{{'EMAIL_REQUIRED' || translate}}</p>
 
           <label class="item item-input">
               <input type="password" name="pass" placeholder="Password" ng-model="data.password"
               ng-class="{ 'has-error' : loginForm.pass.$invalid && !loginForm.pass.$pristine }" required />
           </label>
-          <p ng-show="loginForm.pass.$invalid && !loginForm.pass.$pristine || valid.pass" class="help-block">Your password is required.</p>
+          <p ng-show="loginForm.pass.$invalid && !loginForm.pass.$pristine || valid.pass" class="help-block">{{'PASSWORD_REQUIRED' || translate}}</p>
         </form>
 
       </div>
-      <button class="button button-block button-calm login-btn" ng-click="login(loginForm,data)" translate="LOGIN_BUTTON_TEXT"></button>
+      <button class="button button-block button-calm login-btn" ng-click="login(loginForm,data)">{{'LOGIN_BUTTON_TEXT' || translate}}</button>
 
   </ion-content>
 </ion-view>

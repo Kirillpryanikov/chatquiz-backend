@@ -7,8 +7,7 @@
 	<ion-content overflow-scroll="false" has-bouncing="true" class="has-header has-footer" delegate-handle="userMessageScroll"
 		on-scroll="checkScroll()">
 
-		<div ng-repeat="message in messages track by $index" class="message-wrapper animated fadeInUp" ng-init="$last && refreshScroll(user.id === message.from.id)"
-			on-hold="onMessageHold($event, $index, message)" ng-if="!message.errors">
+		<div ng-repeat="message in messages track by $index" class="message-wrapper animated fadeInUp" ng-init="$last && refreshScroll(user.id === message.from.id)" ng-if="!message.errors">
 
 			<div ng-if="user.id !== message.from.id">
 
@@ -55,8 +54,11 @@
 
 	<!-- <form name="sendMessageForm" ng-submit="sendMessage(sendMessageForm)" novalidate> -->
 		<ion-footer-bar class="bar-stable item-input-inset message-footer" keyboard-attach>
+			<div class="writing-now animated fadeInRight" ng-if="writingNow.length > 0">
+				<p><span ng-repeat="user in writingNow track by $index">{{user.firstName}}, </span>{{'IS_WRITING_NOW' | translate}}</p>
+			</div>
 			<label class="item-input-wrapper">
-                      <textarea ng-model="input.message" value="" placeholder="{{'WRITE_A_MESSAGE' | translate}}"
+                      <textarea ng-model="input.message" ng-change="writing()" placeholder="{{'WRITE_A_MESSAGE' | translate}}"
 											ng-keyup="$event.keyCode == 13 && sendMessage(input.message)" required minlength="1" maxlength="1500" msd-elastic></textarea>
                   </label>
 			<div class="footer-btn-wrap">

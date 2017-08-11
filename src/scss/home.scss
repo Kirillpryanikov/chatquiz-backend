@@ -159,6 +159,15 @@ h1, h2, h3, h4, h5, p, span, div, input, button, select, textarea {
     font-weight: bold;
   }
 
+  .writing-now {
+    position: absolute;
+    font-style: italic;
+    top: -22px;
+    font-size: 10px;
+    width: 100%;
+    text-align: center;
+  }
+
   input, textarea, .item-input, .item-input-wrapper {
     background-color: #f4f4f4 !important;
   }

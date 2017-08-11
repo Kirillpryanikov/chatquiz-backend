@@ -25,7 +25,7 @@ angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate','monospaced.elas
 
     $stateProvider
     .state('chat', {
-        url: "/:list/chat",
+        url: "/:list",
         cache: false,
         templateUrl: "templates/chat.html",
         controller: 'ChatController',
@@ -46,7 +46,7 @@ angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate','monospaced.elas
         }
     })
     .state('login', {
-        url: "/login",
+        url: "/:list/login",
         cache: false,
         templateUrl: "templates/login.html",
         controller: 'LoginCtrl',

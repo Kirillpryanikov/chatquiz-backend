@@ -16,11 +16,12 @@ var imagemin = require('gulp-imagemin');
 var autoprefixer = require('gulp-autoprefixer');
 var path = require('path');
 var del = require('del');
+var ngAnnotate = require('gulp-ng-annotate');
 
 var paths = [{
     sass: ['./src/scss/*.scss'],
     index: './src/index.html',
-    scripts: ['src/js/app.js', 'src/js/**/*.js', 'src/language/*'],
+    scripts: ['src/js/app.js', 'src/js/issues.js', 'src/js/**/*.js', 'src/language/*'],
     styles: 'src/app/scss/**/*.*',
     templates: 'src/templates/**/*.*',
     images: 'src/img/**/*.*',
@@ -62,6 +63,7 @@ gulp.task('scripts', function () {
     return gulp.src(path.scripts)
         .pipe(sourcemaps.init())
         .pipe(concat("script.js"))
+        .pipe(ngAnnotate())
         .pipe(sourcemaps.write())
         .pipe(gulp.dest(path.dist))
         .pipe(rename('script.min.js'))

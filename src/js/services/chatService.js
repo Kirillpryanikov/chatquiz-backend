@@ -43,12 +43,14 @@
         var me = {};
         var apiUrl = BaseURL;
 
-        me.logOut = function () {
+        me.logOut = function (_list) {
           $window.localStorage['_user'] = false;
-          $state.go('login');
-        }
+          $state.go('login', { list: _list });
+        };
+
         me.login = function(data){
-          var endpoint = "auth/"
+          var endpoint = "auth/";
+
           return $http({
             method: 'POST',
             url: apiUrl+endpoint,
