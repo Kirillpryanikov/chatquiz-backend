@@ -9,6 +9,8 @@
 
 ```bower install```
 
+```gulp```
+
 ------
 
 
