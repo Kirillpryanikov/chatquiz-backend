@@ -45,7 +45,7 @@ const log_errors = new winston.Logger({
     level: 'error',
     transports: [
         new (winston.transports.Console)(),
-        new (winston.transports.File)({filename: 'winston_logs/errors.log' })
+        new (winston.transports.File)({filename: 'log/errors.log' })
     ]
 });
 
