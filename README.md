@@ -9,7 +9,10 @@
 
 ```bower install```
 
+```gulp```
+
 ------
+
 
 
 For local developing server
