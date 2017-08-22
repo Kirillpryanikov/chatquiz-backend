@@ -14,15 +14,23 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "async": "^2.5.0",
     "body-parser": "^1.17.2",
+    "colors": "^1.1.2",
     "cors": "^2.8.3",
+    "cycle": "^1.0.3",
     "express": "^4.15.3",
+    "eyes": "^0.1.8",
     "html-entities": "^1.2.1",
+    "install": "^0.10.1",
+    "isstream": "^0.1.2",
     "morgan": "^1.8.2",
+    "npm": "^5.3.0",
     "request": "^2.81.0",
     "request-promise": "^4.2.1",
     "rotating-file-stream": "^1.2.2",
     "socket.io": "^2.0.3",
+    "stack-trace": "0.0.10",
     "winston": "^2.3.1"
   },
   "devDependencies": {

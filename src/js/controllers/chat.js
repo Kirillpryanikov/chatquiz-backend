@@ -145,7 +145,7 @@
 
         msgSocket.on('connect', function () {
 
-            msgSocket.emit('room', room);
+            msgSocket.emit('room', {'room': room, 'userId': userData.id, 'username': userData.firstName});
 
             msgSocket.on('message', function (resp) {
 
