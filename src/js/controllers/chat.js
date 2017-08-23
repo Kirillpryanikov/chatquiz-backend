@@ -6,7 +6,7 @@
         .controller('MainCtrl', MainCtrl)
         .controller('LoginCtrl', LoginCtrl)
         .controller('ChatController', ChatController);
-    MainCtrl.$inject = ['$scope', '$rootScope', '$state',
+         MainCtrl.$inject = ['$scope', '$rootScope', '$state',
         '$stateParams', 'ChatService', 'StorageService',
         '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
         '$ionicActionSheet', '$filter', '$ionicModal', '$q', '$location'];
@@ -218,6 +218,7 @@
         });
 
         msgSocket.on('disconnect', function () {
+            $scope.showAlert('Socket is disconnected.');
             console.log('Socket is disconnected.');
         });
 
