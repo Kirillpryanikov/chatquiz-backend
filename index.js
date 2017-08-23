@@ -15,9 +15,11 @@ const rfs = require('rotating-file-stream');
 var winston = require('winston');
 const app = express();
 const port = process.env.PORT || 8080;
+const url = process.env.APIURL;
+const app_key = process.env.APPKEY;
+
 const server = http.createServer(app);
 const io = socketIO(server);
-
 process.title = "chatMicroS";
 
 
@@ -58,8 +60,8 @@ app.use(express.static(__dirname + '/dist'));
 
 
 app.use('/', (req, res) => {
-    const url = 'https://apidev.growish.com/v1' + req.url;
-    req.pipe(request(url,function(error,response, body){
+    const apiurl = url + req.url;
+    req.pipe(request(apiurl,function(error,response, body){
         if(res.statusCode === 404 && req.url !== '/favicon.ico') {
             log_errors.error('HTTP code:'+res.statusCode+' url:'+req.url);
         }
@@ -78,10 +80,10 @@ io.sockets.on('connection', function (socket) {
         socket.on('message', data => {
             var token = data.user.token;
             var options = {
-                uri: 'https://apidev.growish.com/v1/check-token/',
+                uri: url+ '/check-token/',
                 headers: {
                     'User-Agent': 'Request-Promise',
-                    'x-app-key': '1234567890',
+                    'x-app-key': app_key,
                     'x-auth-token': token
                 },
                 json: true
@@ -118,10 +120,10 @@ io.sockets.on('connection', function (socket) {
 
             let options = {
                 method: 'POST',
-                uri: `https://apidev.growish.com/v1/list/${room.room}/chat-image-upload/`,
+                uri: `${url}/${room.room}/chat-image-upload/`,
                 headers: {
                     'User-Agent': 'Request-Promise',
-                    'x-app-key': '1234567890',
+                    'x-app-key': app_key,
                     'x-auth-token': token
                 },
                 formData: {
