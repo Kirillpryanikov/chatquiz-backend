@@ -147,73 +147,78 @@
 
             msgSocket.emit('room', {'room': room, 'userId': userData.id, 'username': userData.firstName});
 
-            msgSocket.on('message', function (resp) {
+        });
+        //message
+        msgSocket.on('message', function (resp) {
 
-                if (resp.from.id === userData.id) {
-                    if (resp.errors) {
-                        $scope.doneLoading = true;
-                        $scope.showAlert(resp.errors);
-                        ChatService.logOut($stateParams.list);
-                    }
-                }
-
-                resp.ui = {};
-                resp.ui.time = moment().diff(resp.time) > 86400000 ? moment(resp.time).format('DD/MM/YYYY') : moment(resp.time).format('H:mm');
-
-                $scope.messages.push(resp);
-                $scope.$apply();
-                blopFx.play();
-            });
-
-            msgSocket.on('writing', function (u) {
-
-                if(u.id === userData.id)
-                    return false;
-
-                u.timerId = $timeout(function() { removeFromWritingNow(u) }, 6000);
-
-                if($scope.writingNow.length === 0)
-                    $scope.writingNow.push(u);
-                else
-                    angular.forEach($scope.writingNow, function(user, key) {
-                        if(user.id === u.id)
-                        {
-                            $timeout.cancel(user.timerId);
-                            user.timerId = u.timerId;
-                            return false;
-                        }
-                        if(key === $scope.writingNow.length)
-                            $scope.writingNow.push(u);
-                    });
-
-            });
-
-            msgSocket.on('image', function (resp) {
-                if (resp.from.id === userData.id) {
-                    if (resp.errors) {
-                        $scope.doneLoading = true;
-                        var out = '';
-                        if (typeof resp.errors.message === 'object') {
-                            for (var i in resp.errors.message) {
-                                if (typeof resp.errors.message[i] === 'object') {
-                                    for (var j in resp.errors.message[i]) {
-                                        out += '<p>' + resp.errors.message[i][j] + "</p>";
-                                    }
-                                } else {
-                                    out += '<p>' + resp.errors.message + "</p>";
-                                }
-                            }
-                        } else {
-                            out += '<p>' + resp.errors.message + "</p>";
-                        }
-                        $scope.showAlert(out);
-                    }
+            if (resp.from.id === userData.id) {
+                if (resp.errors) {
                     $scope.doneLoading = true;
+                    $scope.showAlert(resp.errors);
+                    ChatService.logOut($stateParams.list);
                 }
-                $scope.messages.push(resp);
-                $scope.$apply();
-            });
+            }
 
+            resp.ui = {};
+            resp.ui.time = moment().diff(resp.time) > 86400000 ? moment(resp.time).format('DD/MM/YYYY') : moment(resp.time).format('H:mm');
+
+            $scope.messages.push(resp);
+            $scope.$apply();
+            blopFx.play();
+        });
+        //writing
+        msgSocket.on('writing', function (u) {
+
+            if(u.id === userData.id)
+                return false;
+
+            u.timerId = $timeout(function() { removeFromWritingNow(u) }, 6000);
+
+            if($scope.writingNow.length === 0)
+                $scope.writingNow.push(u);
+            else
+                angular.forEach($scope.writingNow, function(user, key) {
+                    if(user.id === u.id)
+                    {
+                        $timeout.cancel(user.timerId);
+                        user.timerId = u.timerId;
+                        return false;
+                    }
+                    if(key === $scope.writingNow.length)
+                        $scope.writingNow.push(u);
+                });
+
+        });
+
+        //images
+        msgSocket.on('image', function (resp) {
+            if (resp.from.id === userData.id) {
+                if (resp.errors) {
+                    $scope.doneLoading = true;
+                    var out = '';
+                    if (typeof resp.errors.message === 'object') {
+                        for (var i in resp.errors.message) {
+                            if (typeof resp.errors.message[i] === 'object') {
+                                for (var j in resp.errors.message[i]) {
+                                    out += '<p>' + resp.errors.message[i][j] + "</p>";
+                                }
+                            } else {
+                                out += '<p>' + resp.errors.message + "</p>";
+                            }
+                        }
+                    } else {
+                        out += '<p>' + resp.errors.message + "</p>";
+                    }
+                    $scope.showAlert(out);
+                }
+                $scope.doneLoading = true;
+            }
+            $scope.messages.push(resp);
+            $scope.$apply();
+        });
+
+        msgSocket.on('disconnect', function () {
+            console.log('Socket is disconnected.');
         });
 
         // this could be on $rootScope rather than in $stateParams
