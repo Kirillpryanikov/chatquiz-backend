@@ -2,7 +2,6 @@ const express = require('express');
 const path = require('path');
 const http = require('http');
 const bodyParser = require('body-parser');
-const config = require('./config/config');
 const logger = require('morgan');
 const request = require('request');
 const cors = require('cors');
@@ -12,8 +11,12 @@ const socketIO = require('socket.io');
 const stream = require('stream');
 const process = require('process');
 const rfs = require('rotating-file-stream');
-var winston = require('winston');
+const winston = require('winston');
 const app = express();
+require('dotenv').config({
+    path: path.resolve('.env')
+});
+
 const port = process.env.PORT || 8080;
 const url = process.env.APIURL;
 const app_key = process.env.APPKEY;
@@ -21,7 +24,6 @@ const app_key = process.env.APPKEY;
 const server = http.createServer(app);
 const io = socketIO(server);
 process.title = "chatMicroS";
-
 
 const logDirectory = path.join(__dirname, 'log');
 
