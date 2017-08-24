@@ -61,16 +61,14 @@ app.use(cors());
 app.use(express.static(__dirname + '/dist'));
 
 
-app.use('/', (req, res) => {
+app.use('/apiproxy', (req, res) => {
     const apiurl = url + req.url;
-    req.pipe(request(apiurl,function(error,response, body){
-        if(res.statusCode === 404 && req.url !== '/favicon.ico') {
-            log_errors.error('HTTP code:'+res.statusCode+' url:'+req.url);
-        }
-    })).pipe(res);
-
+    req.pipe(request(apiurl)).pipe(res);
 });
-
+app.use(function(req, res, next) {
+    log_errors.error('HTTP error  url:'+req.url);
+    res.status(404).send('Sorry cant find that!');
+});
 
 io.sockets.on('connection', function (socket) {
 
