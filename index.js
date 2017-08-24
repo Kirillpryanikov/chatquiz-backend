@@ -75,7 +75,7 @@ app.use('/', (req, res) => {
 io.sockets.on('connection', function (socket) {
 
     socket.on('room', function (room) {
-
+        console.log(room);
         socket.join(room.room);
         log_socket.info('user(id|name): '+room.userId + ' '+ room.username +' join to room:'+ room.room);
 
@@ -122,7 +122,7 @@ io.sockets.on('connection', function (socket) {
 
             let options = {
                 method: 'POST',
-                uri: `${url}/${room.room}/chat-image-upload/`,
+                uri: `${url}/list/${room.room}/chat-image-upload/`,
                 headers: {
                     'User-Agent': 'Request-Promise',
                     'x-app-key': app_key,

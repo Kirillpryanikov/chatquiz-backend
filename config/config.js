@@ -1,6 +1,6 @@
-// module.exports = {
-//   appkey: '1234567890'
-// };
+module.exports = {
+  appkey: '1234567890'
+};
 //
 // var env = process.env.NODE_ENV || 'development';
 // console.log(env + ' ENV');
