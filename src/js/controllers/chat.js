@@ -218,7 +218,7 @@
         });
 
         msgSocket.on('disconnect', function () {
-            $scope.showAlert($filter('translate')('SOCKET_SERVER_DOWN_MSG'););
+            $scope.showAlert($filter('translate')('SOCKET_SERVER_DOWN_MSG'));
         });
 
         // this could be on $rootScope rather than in $stateParams
