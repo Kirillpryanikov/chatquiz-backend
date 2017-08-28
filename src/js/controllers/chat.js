@@ -6,7 +6,7 @@
         .controller('MainCtrl', MainCtrl)
         .controller('LoginCtrl', LoginCtrl)
         .controller('ChatController', ChatController);
-    MainCtrl.$inject = ['$scope', '$rootScope', '$state',
+         MainCtrl.$inject = ['$scope', '$rootScope', '$state',
         '$stateParams', 'ChatService', 'StorageService',
         '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
         '$ionicActionSheet', '$filter', '$ionicModal', '$q', '$location'];
@@ -24,7 +24,7 @@
 
     // login
     LoginCtrl.$inject = ['$scope', '$rootScope', '$state',
-        '$stateParams', 'ChatService', 'StorageService',
+        '$stateParams', 'ChatService', 'StorageService','$translate',
         '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
         '$ionicActionSheet', '$filter', '$ionicModal'];
 
@@ -93,11 +93,11 @@
     ChatController.$inject = ['$scope', '$rootScope', '$state',
         '$stateParams', 'ChatService',
         '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
-        '$ionicActionSheet', '$filter', '$ionicModal', 'SockService', 'userData', 'StorageService'];
+        '$ionicActionSheet', '$filter', '$ionicModal', 'SockService', 'userData', 'StorageService','$translate'];
 
     function ChatController($scope, $rootScope, $state, $stateParams, ChatService,
                             $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter,
-                            $ionicModal, SockService, userData, StorageService) {
+                            $ionicModal, SockService, userData, StorageService, translate) {
 
         var _lastWritingEvent = 0;
 
@@ -218,7 +218,7 @@
         });
 
         msgSocket.on('disconnect', function () {
-            console.log('Socket is disconnected.');
+            $scope.showAlert(translate.instant('SOCKET_SERVER_DOWN_MSG'));
         });
 
         // this could be on $rootScope rather than in $stateParams

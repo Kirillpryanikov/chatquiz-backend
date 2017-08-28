@@ -49,7 +49,7 @@
         };
 
         me.login = function(data){
-          var endpoint = "auth/";
+          var endpoint = "apiproxy/auth/";
 
           return $http({
             method: 'POST',

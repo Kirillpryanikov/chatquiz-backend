@@ -2,7 +2,6 @@ const express = require('express');
 const path = require('path');
 const http = require('http');
 const bodyParser = require('body-parser');
-const config = require('./config/config');
 const logger = require('morgan');
 const request = require('request');
 const cors = require('cors');
@@ -12,14 +11,19 @@ const socketIO = require('socket.io');
 const stream = require('stream');
 const process = require('process');
 const rfs = require('rotating-file-stream');
-var winston = require('winston');
+const winston = require('winston');
 const app = express();
+require('dotenv').config({
+    path: path.resolve('.env')
+});
+
 const port = process.env.PORT || 8080;
+const url = process.env.APIURL;
+const app_key = process.env.APPKEY;
+
 const server = http.createServer(app);
 const io = socketIO(server);
-
 process.title = "chatMicroS";
-
 
 const logDirectory = path.join(__dirname, 'log');
 
@@ -57,31 +61,29 @@ app.use(cors());
 app.use(express.static(__dirname + '/dist'));
 
 
-app.use('/', (req, res) => {
-    const url = 'https://apidev.growish.com/v1' + req.url;
-    req.pipe(request(url,function(error,response, body){
-        if(res.statusCode === 404 && req.url !== '/favicon.ico') {
-            log_errors.error('HTTP code:'+res.statusCode+' url:'+req.url);
-        }
-    })).pipe(res);
-
+app.use('/apiproxy', (req, res) => {
+    const apiurl = url + req.url;
+    req.pipe(request(apiurl)).pipe(res);
 });
-
+app.use(function(req, res, next) {
+    log_errors.error('HTTP error  url:'+req.url);
+    res.status(404).send('Sorry cant find that!');
+});
 
 io.sockets.on('connection', function (socket) {
 
     socket.on('room', function (room) {
-
+        console.log(room);
         socket.join(room.room);
         log_socket.info('user(id|name): '+room.userId + ' '+ room.username +' join to room:'+ room.room);
 
         socket.on('message', data => {
             var token = data.user.token;
             var options = {
-                uri: 'https://apidev.growish.com/v1/check-token/',
+                uri: url+ '/check-token/',
                 headers: {
                     'User-Agent': 'Request-Promise',
-                    'x-app-key': '1234567890',
+                    'x-app-key': app_key,
                     'x-auth-token': token
                 },
                 json: true
@@ -118,10 +120,10 @@ io.sockets.on('connection', function (socket) {
 
             let options = {
                 method: 'POST',
-                uri: `https://apidev.growish.com/v1/list/${room.room}/chat-image-upload/`,
+                uri: `${url}/list/${room.room}/chat-image-upload/`,
                 headers: {
                     'User-Agent': 'Request-Promise',
-                    'x-app-key': '1234567890',
+                    'x-app-key': app_key,
                     'x-auth-token': token
                 },
                 formData: {
