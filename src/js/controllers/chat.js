@@ -268,11 +268,8 @@
         };
 
         $scope.sendPhoto = function (e) {
-           // $scope.doneLoading = false;
-            var msg = {};
             var fileTypes = ['jpg', 'jpeg', 'png', 'ico'];
             if (e && e.files && e.files.length > 0) {
-                //console.log('doneLoading',$scope.doneLoading);
                 $scope.$apply();
                 var extension = e.files[0].name.split('.').pop().toLowerCase(),  //file extension from input file
                     isSuccess = fileTypes.indexOf(extension) > -1;  //is extension in acceptable types
@@ -292,8 +289,6 @@
                             imageUrl: userData.imageUrl
                         }
                         $scope.$apply();
-
-                        //msgSocket.emit('image', msg);
 
                     };
                     if (msg !== {}) {
