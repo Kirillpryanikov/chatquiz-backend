@@ -266,7 +266,9 @@
         var addMessage = function (message) {
             msgSocket.emit('message', message);
         };
-
+        $scope.closeUpload = function () {
+            delete($scope.img_review);
+        };
         $scope.sendPhoto = function (e) {
             var fileTypes = ['jpg', 'jpeg', 'png', 'ico'];
             if (e && e.files && e.files.length > 0) {
