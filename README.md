@@ -17,14 +17,14 @@
 
 For local developing server
 
-```npm start pm2.config.json```
+```pm2 start pm2.config.json```
 
 For staging:
 
-```npm start pm2.config.json --env staging```
+```pm2 start pm2.config.json --env staging```
 
 For production:
 
-```npm start pm2.config.json --env production```
+```pm2 start pm2.config.json --env production```
 
 Environments variables are set using PM2. For updating variables values while server is running use: ```--update-env```
