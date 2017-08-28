@@ -291,7 +291,7 @@
                         $scope.$apply();
 
                     };
-                    if (msg !== {}) {
+                    if ($scope.msg !== {}) {
                         reader.readAsDataURL(file);
                     }
                 } else {
