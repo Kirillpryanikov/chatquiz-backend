@@ -268,7 +268,7 @@
         };
 
         $scope.sendPhoto = function (e) {
-            $scope.doneLoading = false;
+           // $scope.doneLoading = false;
             var msg = {};
             var fileTypes = ['jpg', 'jpeg', 'png', 'ico'];
             if (e && e.files && e.files.length > 0) {
@@ -281,16 +281,19 @@
                     var file = e.files[0];
                     var reader = new FileReader();
                     reader.onload = function (evt) {
-
-                        msg.image = evt.target.result;
-                        msg.image_name = file.name;
-                        msg.token = userData.token;
-                        msg.user = {
+                        $scope.msg = $scope.img_review = {};
+                        $scope.img_review.image = evt.target.result;
+                        $scope.msg.image = evt.target.result;
+                        $scope.msg.image_name = file.name;
+                        $scope.msg.token = userData.token;
+                        $scope.msg.user = {
                             firstName: userData.firstName,
                             id: userData.id,
                             imageUrl: userData.imageUrl
                         }
-                        msgSocket.emit('image', msg);
+                        $scope.$apply();
+
+                        //msgSocket.emit('image', msg);
 
                     };
                     if (msg !== {}) {
@@ -306,7 +309,11 @@
             }
 
         };
-
+        $scope.sendPhotoMessage = function (msg) {
+            $scope.msg.message = msg;
+            msgSocket.emit('image', $scope.msg);
+            delete($scope.img_review);
+        }
         $scope.sendMessage = function (sendMessageForm) {
             // console.log(userData);
             var message = {

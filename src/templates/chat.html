@@ -1,4 +1,26 @@
 <ion-view class="homeView" cache-view="false" hide-back-button="true" view-title="{{'APP_TITLE' | translate}}">
+	<!--modal image upload-->
+	<div ng-show="img_review">
+		<div class="uploading animated fadeInUp" >
+			<header class="uploading__header">
+				<div class="uploading__title">
+					<div class="uploading__title-action">
+						<span class="uploading__icon-close">x</span>
+					</div>
+					<span class="uploading__title-body">Просмотр</span>
+				</div>
+			</header>
+			<div class="uploading__body">
+				<img ng-src="{{img_review.image}}" alt="">
+			</div>
+			<div class="uploading__footer">
+				<textarea rows="1" autofocus ng-model="img_review.message" ng-change="writing()" placeholder="{{'WRITE_A_MESSAGE' | translate}}"
+						  ng-keyup="$event.keyCode == 13 && sendPhotoMessage(img_review.message)" required minlength="1" maxlength="1500" msd-elastic></textarea>
+				<button class="button button-icon icon ion-android-send footer-btn" type="submit" ng-disabled="!img_review.message || img_review.message === ''"
+						ng-click="sendPhotoMessage(img_review.message)" disabled="disabled"></button>
+			</div>
+		</div>
+	</div>
 	<div class="loader-center" ng-if="!doneLoading">
 		<div class="loader">
 			<i class="icon ion-load-c"></i>
@@ -50,10 +72,13 @@
 			<div class="cf"></div>
 
 		</div>
+
+
 	</ion-content>
 
 	<!-- <form name="sendMessageForm" ng-submit="sendMessage(sendMessageForm)" novalidate> -->
-		<ion-footer-bar class="bar-stable item-input-inset message-footer" keyboard-attach>
+		<ion-footer-bar class="bar-stable item-input-inset message-footer animated fadeInUp" keyboard-attach ng-show="!img_review">
+
 			<div class="writing-now animated fadeInRight" ng-if="writingNow.length > 0">
 				<p><span ng-repeat="user in writingNow track by $index">{{user.firstName}}, </span>{{'IS_WRITING_NOW' | translate}}</p>
 			</div>
