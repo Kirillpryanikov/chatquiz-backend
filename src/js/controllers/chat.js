@@ -266,13 +266,12 @@
         var addMessage = function (message) {
             msgSocket.emit('message', message);
         };
-
+        $scope.closeUpload = function () {
+            delete($scope.img_review);
+        };
         $scope.sendPhoto = function (e) {
-            $scope.doneLoading = false;
-            var msg = {};
             var fileTypes = ['jpg', 'jpeg', 'png', 'ico'];
             if (e && e.files && e.files.length > 0) {
-                //console.log('doneLoading',$scope.doneLoading);
                 $scope.$apply();
                 var extension = e.files[0].name.split('.').pop().toLowerCase(),  //file extension from input file
                     isSuccess = fileTypes.indexOf(extension) > -1;  //is extension in acceptable types
@@ -281,19 +280,20 @@
                     var file = e.files[0];
                     var reader = new FileReader();
                     reader.onload = function (evt) {
-
-                        msg.image = evt.target.result;
-                        msg.image_name = file.name;
-                        msg.token = userData.token;
-                        msg.user = {
+                        $scope.msg = $scope.img_review = {};
+                        $scope.img_review.image = evt.target.result;
+                        $scope.msg.image = evt.target.result;
+                        $scope.msg.image_name = file.name;
+                        $scope.msg.token = userData.token;
+                        $scope.msg.user = {
                             firstName: userData.firstName,
                             id: userData.id,
                             imageUrl: userData.imageUrl
                         }
-                        msgSocket.emit('image', msg);
+                        $scope.$apply();
 
                     };
-                    if (msg !== {}) {
+                    if ($scope.msg !== {}) {
                         reader.readAsDataURL(file);
                     }
                 } else {
@@ -306,7 +306,11 @@
             }
 
         };
-
+        $scope.sendPhotoMessage = function (msg) {
+            $scope.msg.message = msg;
+            msgSocket.emit('image', $scope.msg);
+            delete($scope.img_review);
+        }
         $scope.sendMessage = function (sendMessageForm) {
             // console.log(userData);
             var message = {

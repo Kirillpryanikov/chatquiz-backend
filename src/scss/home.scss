@@ -246,3 +246,63 @@ h1, h2, h3, h4, h5, p, span, div, input, button, select, textarea {
 .help-block {
   color: #e63a3a;
 }
+.uploading {
+  width: 100%;
+  background-color: #dfdfdf;
+  height: 85vh;
+  z-index: 9999;
+  position: fixed;
+  top:44px;
+
+  &__title {
+    height: 49px;
+    background-color: #00bfa5;
+    display: flex;
+    align-items: center;
+    color: #fff;
+    font-size: 18px;
+  }
+  &__icon-close {
+    margin-left: 20px;
+    font-size: 20px;
+  }
+  &__title-body {
+    margin-left: 10px;
+  }
+  &__body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    img {
+      margin: 30px;
+    }
+  }
+  &__footer {
+    width: 100%;
+    textarea {
+      border-bottom: 2px solid #00bfa5;
+      width: 80%;
+      height: 40px;
+      margin: auto;
+    }
+    position: absolute;
+    bottom: 100px;
+
+    .button-icon .icon:before, .button-icon.icon:before {
+      color: #fff;
+    }
+
+    button.ion-android-send {
+      margin: auto;
+      right: 50px;
+      background-color: green;
+      border-radius: 50%;
+      padding: 6px;
+      width: 50px;
+      height: 50px;
+    }
+  }
+
+}
+
