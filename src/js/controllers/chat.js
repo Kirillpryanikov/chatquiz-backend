@@ -145,12 +145,16 @@
 
         msgSocket.on('connect', function () {
 
-            msgSocket.emit('room', {'room': room, 'userId': userData.id, 'username': userData.firstName});
+            msgSocket.emit('room', {'room': room, 'userId': userData.id, 'username': userData.firstName,'token': userData.token});
 
         });
         //message
+        $scope.owner = {};
+        msgSocket.on('room', function (resp) {
+            $scope.owner = resp;
+        });
+        //message
         msgSocket.on('message', function (resp) {
-
             if (resp.from.id === userData.id) {
                 if (resp.errors) {
                     $scope.doneLoading = true;
@@ -319,7 +323,9 @@
                     firstName: userData.firstName,
                     id: userData.id,
                     imageUrl: userData.imageUrl,
-                    token: userData.token
+                    token: userData.token,
+                    owner_id: $scope.owner.owner_id,
+                    owner_color: $scope.owner.color
                 }
             };
 

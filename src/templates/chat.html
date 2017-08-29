@@ -35,7 +35,8 @@
 
 				<img ng-click="viewProfile(message)" class="profile-pic left" ng-src="{{message.from.imageUrl}}thumb/" onerror="onProfilePicError(this)" />
 
-				<div class="chat-bubble left">
+				<div class="chat-bubble left" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}">
+					<div class="bubble-before" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}"></div>
 
 					<img ng-click="photoBrowser(message)" ng-if="message.image" ng-src="{{message.image}}" ng-success="refreshScroll(scrollDown)" />
 
@@ -54,7 +55,8 @@
 
 				<img class="profile-pic right" ng-src="{{message.from.imageUrl}}thumb/" onerror="onProfilePicError(this)" />
 
-				<div class="chat-bubble right">
+				<div class="chat-bubble right" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}" >
+					<div class="bubble-before" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}"></div>
 
 					<img ng-click="photoBrowser(message)" ng-if="message.image" ng-src="{{message.image}}" ng-success="refreshScroll($last)"/>
 

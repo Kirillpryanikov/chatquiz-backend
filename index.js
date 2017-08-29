@@ -20,7 +20,7 @@ require('dotenv').config({
 const port = process.env.PORT || 8080;
 const url = process.env.APIURL;
 const app_key = process.env.APPKEY;
-
+const color = process.env.COLOR;
 const server = http.createServer(app);
 const io = socketIO(server);
 process.title = "chatMicroS";
@@ -71,29 +71,40 @@ app.use(function(req, res, next) {
 });
 
 io.sockets.on('connection', function (socket) {
-
+    let msg ={};
     socket.on('room', function (room) {
-        console.log(room);
+        var options = {
+            uri: `${url}/list/${room.room}/`,
+            headers: {
+                'User-Agent': 'Request-Promise',
+                'x-app-key': app_key,
+                'x-auth-token': room.token
+            },
+            json: true
+        };
+        rp(options)
+            .then(function (resp) {
+                socket.emit('room', {'owner_id':resp.data.userId,'color':color});
+            })
+            .catch(function (err) {
+                console.log('resp err');
+            });
         socket.join(room.room);
         log_socket.info('user(id|name): '+room.userId + ' '+ room.username +' join to room:'+ room.room);
 
         socket.on('message', data => {
-            var token = data.user.token;
             var options = {
                 uri: url+ '/check-token/',
                 headers: {
                     'User-Agent': 'Request-Promise',
                     'x-app-key': app_key,
-                    'x-auth-token': token
+                    'x-auth-token': data.user.token
                 },
                 json: true
             };
-
-            let msg = {
-                message: data.message,
-                from: data.user,
-                time: new Date()
-            };
+            msg.message = data.message;
+            msg.from = data.user;
+            msg.time = new Date();
 
             log_socket.info('room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '+ data.user.firstName + ' | ' + data.message);
 
@@ -116,7 +127,6 @@ io.sockets.on('connection', function (socket) {
         socket.on('image', data => {
             let file = new Buffer(data.image, 'base64');
             fs.writeFileSync(data.image_name.toString(), data.image.split(',')[1], 'base64');
-            let token = data.token;
 
             let options = {
                 method: 'POST',
@@ -124,7 +134,7 @@ io.sockets.on('connection', function (socket) {
                 headers: {
                     'User-Agent': 'Request-Promise',
                     'x-app-key': app_key,
-                    'x-auth-token': token
+                    'x-auth-token':  data.token
                 },
                 formData: {
                     file: {

@@ -113,7 +113,7 @@ h1, h2, h3, h4, h5, p, span, div, input, button, select, textarea {
     min-width: 130px;
   }
 
-  .chat-bubble:before {
+  .chat-bubble .bubble-before {
     content: "\00a0";
     display: block;
     height: 15px;
@@ -133,7 +133,7 @@ h1, h2, h3, h4, h5, p, span, div, input, button, select, textarea {
     margin-left: 55px;
   }
 
-  .chat-bubble.left:before {
+  .chat-bubble.left .bubble-before {
     background-color: #f2f2ed;
     left: -3px;
     -webkit-transform: rotate(30deg) skew(0deg);
@@ -147,7 +147,7 @@ h1, h2, h3, h4, h5, p, span, div, input, button, select, textarea {
     margin-right: 55px;
   }
 
-  .chat-bubble.right:before {
+  .chat-bubble.right .bubble-before {
     background-color: #1bbc9b;
     right: -2px;
     -webkit-transform: rotate(118deg) skew(0deg);
