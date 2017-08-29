@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+    <title></title>
+
+    <link href="lib/ionic/css/ionic.min.css" rel="stylesheet">
+    <link href="lib/animate.css/animate.min.css" rel="stylesheet">
+    <link href="styles.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+
+    <script src="lib/ionic/js/ionic.bundle.min.js"></script>
+    <script src="lib/angular-animate/angular-animate.min.js"></script>
+    <script src="lib/moment/min/moment.min.js"></script>
+    <script src="lib/moment/locale/it.js"></script>
+    <script src="lib/angular-elastic/elastic.js"></script>
+    <script src="lib/Autolinker.js/dist/Autolinker.min.js"></script>
+    <script src="lib/socket.io-client/dist/socket.io.js"></script>
+    <script src="lib/angular-socket-io/socket.js"></script>
+    <script src="lib/angular-translate/angular-translate.min.js"></script>
+    <script src="lib/howler.js/dist/howler.min.js"></script>
+    <script src="script.min.js"></script>
+  </head>
+
+  <body ng-app="App" >
+
+  <ion-nav-bar class="bar-dark" no-tap-scroll="false" ng-controller="MainCtrl">
+
+      <button id="logout" ng-if="usr.token" ng-click="logout()" class="button icon-left ion-log-out button-clear button-dark">{{'CLOSE_SESSION' | translate}}</button>
+
+    </ion-nav-bar>
+
+    <ion-nav-view animation="slide-left-right"></ion-nav-view>
+
+  </body>
+
+</html>

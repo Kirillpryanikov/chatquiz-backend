@@ -16,58 +16,36 @@ var imagemin = require('gulp-imagemin');
 var autoprefixer = require('gulp-autoprefixer');
 var path = require('path');
 var del = require('del');
+var ngAnnotate = require('gulp-ng-annotate');
 
 var paths = [{
-    sass: ['quiz/scss/**/*.scss'],
-    index: 'quiz/app/index.html',
-    scripts: ['quiz/app/js/app.js', 'quiz/app/js/**/*.js'],
-    styles: 'quiz/app/scss/**/*.*',
-    templates: 'quiz/app/templates/**/*.*',
-    images: 'quiz/app/img/**/*.*',
-    lib: 'quiz/www/lib/**/*.*',
+    sass: ['./src/scss/*.scss'],
+    index: './src/index.html',
+    scripts: ['src/js/app.js', 'src/js/issues.js', 'src/js/**/*.js', 'src/language/*'],
+    styles: 'src/app/scss/**/*.*',
+    templates: 'src/templates/**/*.*',
+    images: 'src/img/**/*.*',
+    lib: 'src/www/lib/**/*.*',
     //Destination folders
-    destImages: './dist/quiz/img/',
-    destTemplates: './dist/quiz/templates/',
-    sassSrc: './dist/quiz/scss/ionic.app.scss',
-    destSass: './dist/quiz/css/',
-    dist: "./dist/quiz",
-    scriptBuild: "./dist/quiz/build/",
-    cssDist: './dist/quiz/css/',
-    libDist: 'dist/quiz/lib'
-
-},
-{
-    sass: ['imagechat/scss/**/*.scss'],
-    index: 'imagechat/app/index.html',
-    scripts: ['imagechat/app/js/app.js', 'imagechat/app/js/**/*.js'],
-    styles: 'imagechat/app/scss/**/*.*',
-    templates: 'imagechat/app/templates/**/*.*',
-    images: 'imagechat/app/img/**/*.*',
-    lib: 'imagechat/www/lib/**/*.*',
-    //Destination folders
-    destImages: './dist/imagechat/img/',
-    destTemplates: './dist/imagechat/templates/',
-    sassSrc: './dist/imagechat/scss/ionic.app.scss',
-    destSass: './dist/imagechat/css/',
-    dist: "./dist/imagechat",
-    scriptBuild: "./dist/imagechat/build/",
-    cssDist: './dist/imagechat/css/',
-    libDist: 'dist/imagechat/lib'
+    destImages: './dist/img/',
+    destTemplates: './dist/templates/',
+    destSass: './dist/css',
+    dist: "./dist",
+    cssDist: './dist/css/',
+    libDist: 'dist/lib'
 }];
 
-gulp.task('default', ['sass', 'index', 'scripts', 'styles', 'templates', 'images']);
+gulp.task('default', ['css', 'index', 'scripts', 'styles', 'templates', 'images']);
 
-gulp.task('sass', function () {
+gulp.task('css', function () {
   return paths.map(function(path){
-    return
-        gulp.src(path.sass)
+    return gulp.src(path.sass)
         .pipe(sass())
-        .pipe(gulp.dest())
         .pipe(minifyCss({
             keepSpecialComments: 0
         }))
-        .pipe(rename({ extname: '.min.css' }))
-        .pipe(gulp.dest(path.destSass))
+        .pipe(concat("styles.min.css"))
+        .pipe(gulp.dest(path.dist))
   })
 });
 
@@ -84,12 +62,13 @@ gulp.task('scripts', function () {
   return paths.map(function(path){
     return gulp.src(path.scripts)
         .pipe(sourcemaps.init())
-        .pipe(concat("app.js"))
+        .pipe(concat("script.js"))
+        .pipe(ngAnnotate())
         .pipe(sourcemaps.write())
-        .pipe(gulp.dest(path.scriptBuild))
-        .pipe(rename('app.min.js'))
+        .pipe(gulp.dest(path.dist))
+        .pipe(rename('script.min.js'))
         .pipe(uglify())
-        .pipe(gulp.dest(path.scriptBuild));
+        .pipe(gulp.dest(path.dist));
   });
 });
 
