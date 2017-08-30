@@ -13,6 +13,11 @@ const process = require('process');
 const rfs = require('rotating-file-stream');
 const winston = require('winston');
 const app = express();
+const mongoose = require('mongoose');
+const db = require('./config/db/models');
+
+
+
 require('dotenv').config({
     path: path.resolve('.env')
 });
@@ -82,6 +87,16 @@ io.sockets.on('connection', function (socket) {
             },
             json: true
         };
+
+        db.Room.findOne({room_id: room.room}, function (err, topic) {
+            if (err) {
+                console.log('Mongo Update Err: ',err);
+            }
+            if(topic && topic.topic ) {
+               socket.emit('room', {'topic':topic.topic});
+            }
+        });
+
         rp(options)
             .then(function (resp) {
                 socket.emit('room', {'owner_id':resp.data.userId,'color':color});
@@ -103,6 +118,12 @@ io.sockets.on('connection', function (socket) {
                 json: true
             };
             msg.message = data.message;
+            if(data.topic) {
+                msg.topic = data.topic.substring(0, process.env.TOPIC_LENGTH);
+                db.Room.update({room_id: room.room},{topic: msg.topic},{upsert: true}, function (err, res) {
+                    console.log(err);
+                });
+            }
             msg.from = data.user;
             msg.time = new Date();
 
@@ -155,7 +176,6 @@ io.sockets.on('connection', function (socket) {
                     from: data.user,
                     time: new Date()
                 };
-
                 io.sockets.in(room.room).emit('image', msg);
                 fs.unlinkSync(data.image_name.toString());
                 log_socket.info('Image upload:: room:'+ room.room +' user(id|name|imageUrl): '+data.user.id +' | '+ data.user.firstName +' | '+image.data.imageUrl);
@@ -180,6 +200,12 @@ io.sockets.on('connection', function (socket) {
 
 });
 
+mongoose.connect('mongodb://localhost:27017/chat_service_db',function (err) {
+    if(err){
+        console.log('Mongo Connect Error: ',err);
+    }
+    console.log('Mongo connected');
+});
 
 server.listen(port, () => {
     console.log(`Socket server started listen on port: ${port}`);

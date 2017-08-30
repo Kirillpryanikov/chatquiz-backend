@@ -107,6 +107,27 @@
             src: ['sound/blop.mp3']
         });
 
+        $scope.editTopic = function () {
+            $scope.topic_edit = true;
+        }
+        $scope.saveTopic = function (title) {
+            $scope.topic_edit = false;
+            var message = {
+                message: translate.instant('CHANGE_TOPIC') + $scope.topic_title,
+                user: {
+                    firstName: userData.firstName,
+                    id: userData.id,
+                    imageUrl: userData.imageUrl,
+                    token: userData.token,
+                    owner_id: $scope.owner.owner_id,
+                    owner_color: $scope.owner.color
+                },
+                topic: $scope.topic_title
+            };
+            addMessage(message);
+           // $scope.topic_title = title;
+
+        }
         $scope.writing = function () {
             var _now = Date.now();
           if($scope.input.message && $scope.input.message.length > 0 && (_now - _lastWritingEvent > 5000)) {
@@ -117,7 +138,6 @@
         };
 
         $scope.showAlert = function (message) {
-            // console.log('message',message);
             var alertPopup = $ionicPopup.alert({
                 title: 'Oops...',
                 template: '<p>' + message + '</p>'
@@ -150,8 +170,18 @@
         });
         //message
         $scope.owner = {};
+        $scope.topic_edit = false;
         msgSocket.on('room', function (resp) {
             $scope.owner = resp;
+            if(!$scope.topic_title || resp.owner_id || resp.topic) {
+                if(resp.topic ) {
+                    $scope.topic_title = resp.topic;
+                }
+                if(!$scope.topic_title && $scope.owner.owner_id)  {
+                    $scope.topic_title = translate.instant('SET_TOPIC');
+                }
+            }
+            $scope.$apply();
         });
         //message
         msgSocket.on('message', function (resp) {
@@ -162,7 +192,9 @@
                     ChatService.logOut($stateParams.list);
                 }
             }
-
+            if(resp.topic) {
+                $scope.topic_title = resp.topic;
+            }
             resp.ui = {};
             resp.ui.time = moment().diff(resp.time) > 86400000 ? moment(resp.time).format('DD/MM/YYYY') : moment(resp.time).format('H:mm');
 
@@ -292,7 +324,9 @@
                         $scope.msg.user = {
                             firstName: userData.firstName,
                             id: userData.id,
-                            imageUrl: userData.imageUrl
+                            imageUrl: userData.imageUrl,
+                            owner_id: $scope.owner.owner_id,
+                            owner_color: $scope.owner.color
                         }
                         $scope.$apply();
 
@@ -301,7 +335,6 @@
                         reader.readAsDataURL(file);
                     }
                 } else {
-                    //console.log('isSuccess else');
                     $scope.doneLoading = true;
                     $scope.showAlert('File type is not supported');
                 }
@@ -316,7 +349,6 @@
             delete($scope.img_review);
         }
         $scope.sendMessage = function (sendMessageForm) {
-            // console.log(userData);
             var message = {
                 message: $scope.input.message,
                 user: {

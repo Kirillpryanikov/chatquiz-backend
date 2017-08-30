@@ -11,6 +11,7 @@
 
 ```gulp```
 
+```Create a .env file like env.example```
 ------
 
 

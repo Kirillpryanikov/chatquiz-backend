@@ -105,7 +105,8 @@ h1, h2, h3, h4, h5, p, span, div, input, button, select, textarea {
 
   .chat-bubble {
     border-radius: 5px;
-    display: inline-block;
+    display: flex;
+    flex-direction: column;
     padding: 10px 18px;
     position: relative;
     margin: 10px;
@@ -305,4 +306,38 @@ h1, h2, h3, h4, h5, p, span, div, input, button, select, textarea {
   }
 
 }
+.topic {
+  margin-top: 60px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  z-index: 22;
+  &__title {
+    z-index: 99;
+  }
+  &__inner {
+    display: flex;
+    justify-content: center;
+    background-color: yellowgreen;
+    padding: 10px 15px;
+    border-radius: 12px;
+  }
+  &__edit {
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 5px;
+    width: 10px;
+    height: 10px;
+    z-index: 99;
+    input {
+      z-index: 99;
+    }
+  }
+  &__edit:hover {
+    font-size: 20px;
+  }
 
+}

@@ -1,5 +1,19 @@
 <ion-view class="homeView" cache-view="false" hide-back-button="true" view-title="{{'APP_TITLE' | translate}}">
 	<!--modal image upload-->
+	<div class="topic" ng-show="topic_title || owner.owner_id === user.id">
+		<div class="topic__inner">
+			<div class="topic__title">
+				<span ng-show="!topic_edit " ng-bind="topic_title"></span>
+				<input type="text" class="topic__edit-field" ng-model="topic_title" ng-show="owner.owner_id && topic_edit">
+			</div>
+			<div class="topic__edit" ng-click="editTopic()" ng-if="owner.owner_id && !topic_edit">
+				<i class = "icon icon ion-compose" ></i>
+			</div>
+			<div class="topic__edit" ng-click="saveTopic(topic_title)" ng-if="owner.owner_id && topic_edit">
+				<i class = "icon icon ion-checkmark-circled" ></i>
+			</div>
+		</div>
+	</div>
 	<div ng-show="img_review">
 		<div class="uploading animated fadeInUp" >
 			<header class="uploading__header">
@@ -41,7 +55,7 @@
 					<img ng-click="photoBrowser(message)" ng-if="message.image" ng-src="{{message.image}}" ng-success="refreshScroll(scrollDown)" />
 
 					<span class="bold">{{message.from.firstName}}</span>
-					<div ng-if="!message.image" class="message" ng-bind-html="message.message | nl2br" autolinker>
+					<div ng-if="!message.imageUrl" class="message" ng-bind-html="message.message | nl2br" autolinker>
 					</div>
 
 					<div class="message-detail">
