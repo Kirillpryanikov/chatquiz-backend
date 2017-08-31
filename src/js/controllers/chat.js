@@ -17,7 +17,6 @@
 
         $scope.logout = function () {
             ChatService.logOut($stateParams.list);
-
             $rootScope.usr = false;
         }
     }
@@ -52,16 +51,15 @@
 
         $scope.login = function (form, data) {
             $scope.doneLoading = true;
-            var room = $stateParams.list ? $stateParams.list : StorageService.getRoom();
+
             if (form.$valid) {
                 ChatService.login(data)
                     .then(function (resp) {
                         resp.data = resp.data.data ? resp.data.data : resp.data;
-
                         StorageService.setAuthData(resp.data);
                         $scope.doneLoading = false;
                         $rootScope.usr = resp.data;
-                        $state.go('chat', {list: room});
+                        $state.go('chat', {list: $stateParams.list});
                     })
                     .catch(function (resp) {
 
@@ -77,7 +75,6 @@
                         } else {
                             $scope.valid.message = "Access Invalid Credentials"
                             $scope.doneLoading = false;
-
                         }
 
                     });
@@ -147,8 +144,6 @@
             });
         };
 
-        var room = $stateParams.list ? $stateParams.list : StorageService.getRoom();
-
         var msgSocket = SockService.connect();
         if (!$scope.messages || $scope.messages === undefined) {
             $scope.messages = [];
@@ -165,7 +160,7 @@
 
         msgSocket.on('connect', function () {
 
-            msgSocket.emit('room', {'room': room, 'userId': userData.id, 'username': userData.firstName,'token': userData.token});
+            msgSocket.emit('room', {'room': $stateParams.list, 'userId': userData.id, 'username': userData.firstName,'token': userData.token});
 
         });
         //message
