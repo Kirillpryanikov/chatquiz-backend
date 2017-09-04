@@ -185,8 +185,52 @@ h1, h2, h3, h4, h5, p, span, div, input, button, select, textarea {
     color: #3b88c3;
     text-decoration: none;
   }
-  .whith-image .chat-bubble {
+  .whith-image.chat-bubble {
     max-width: 250px;
+  }
+  .chat-bubble.right .heart-first {
+    position: absolute;
+    left: -20px;
+    top: 0px;
+    font-size: 18px;
+    color: red;
+
+  }
+
+  .chat-bubble.right .heart-last {
+    position: absolute;
+    left: -18px;
+    font-size: 13px;
+    top: 0px;
+    color: #fff;
+  }
+  .chat-bubble.left .heart-first {
+    position: absolute;
+    right: -20px;
+    top: 0px;
+    font-size: 18px;
+    color: red;
+  }
+
+  .chat-bubble.left .heart-last {
+    position: absolute;
+    right: -18px;
+    font-size: 13px;
+    top: 0px;
+    color: #fff;
+  }
+  .chat-bubble .like-wrap span {
+    position: absolute;
+    color: #000;
+    font-size: 12px;
+  }
+  .chat-bubble.left .like-wrap span{
+    right: -16px;
+    top: 15px;
+  }
+  .chat-bubble.right .like-wrap span{
+    left: -16px;
+    top: 15px;
   }
 }
 
@@ -339,5 +383,4 @@ h1, h2, h3, h4, h5, p, span, div, input, button, select, textarea {
   &__edit:hover {
     font-size: 20px;
   }
-
 }

@@ -11,8 +11,17 @@ let Room = new mongoose.Schema({
     }
 });
 
-
+let Message = new mongoose.Schema({
+    message: String,
+    owner_id: String,
+    likes: [
+        {user: String}
+    ],
+    date: {type: Date, default: Date.now, required: true},
+    room: String
+});
 
 module.exports = {
-    Room: mongoose.model('Room', Room)
+    Room: mongoose.model('Room', Room),
+    Message: mongoose.model('Message', Message)
 };
