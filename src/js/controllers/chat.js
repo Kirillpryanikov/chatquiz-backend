@@ -146,7 +146,8 @@
             if(!$scope.messages[index].likes) {
                 $scope.messages[index].likes = 0;
             }
-            msgSocket.emit('like', {message_id: $scope.messages[index].id, user_id: $scope.user.id});
+
+            msgSocket.emit('like', {message_id: $scope.messages[index]._id, user_id: $scope.user.id});
         };
         var msgSocket = SockService.connect();
         if (!$scope.messages || $scope.messages === undefined) {
@@ -163,7 +164,7 @@
         };
 
         msgSocket.on('connect', function () {
-
+            $scope.doneLoading = false;
             msgSocket.emit('room', {'room': $stateParams.list, 'userId': userData.id, 'username': userData.firstName,'token': userData.token});
 
         });
@@ -180,13 +181,18 @@
                     $scope.topic_title = translate.instant('SET_TOPIC');
                 }
             }
+            if(resp.history) {
+              console.log('Histoty', resp.history);
+              $scope.messages = resp.history;
+            }
+            $scope.doneLoading = true;
             $scope.$apply();
         });
         //like
         msgSocket.on('like', function (resp) {
             if(resp.message_id ) {
                 $scope.messages.find(function (e, i) {
-                    if(e.id === resp.message_id) {
+                    if(e._id === resp.message_id) {
                         if($scope.messages[i].likes !== resp.count){
                             $scope.messages[i].likes = resp.count;
                             if(resp.user_id === $scope.user.id ){

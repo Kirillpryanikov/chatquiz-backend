@@ -13,11 +13,14 @@ let Room = new mongoose.Schema({
 
 let Message = new mongoose.Schema({
     message: String,
-    owner_id: String,
+    image: {
+        type: String,
+    },
+    from: Object,
     likes: [
         {user: String}
     ],
-    date: {type: Date, default: Date.now, required: true},
+    time: {type: Date, default: Date.now, required: true},
     room: String
 });
 
