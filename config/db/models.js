@@ -13,9 +13,7 @@ let Room = new mongoose.Schema({
 
 let Message = new mongoose.Schema({
     message: String,
-    image: {
-        type: String,
-    },
+    image: String,
     from: Object,
     likes: [
         {user: String}

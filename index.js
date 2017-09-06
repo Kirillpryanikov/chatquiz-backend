@@ -90,12 +90,12 @@ io.sockets.on('connection', function (socket) {
                 socket.emit('room', {'topic': resp});
             }
         });
-        tools.message.get_history(room.room, room.userId, function (err, resp) {
-            if(resp) {
-
-                socket.emit('room', {'history': resp});
-            }
-        });
+        // tools.message.get_history(room.room, room.userId, 0, function (err, resp) {
+        //     if(resp) {
+        //
+        //         socket.emit('room', {'history': resp});
+        //     }
+        // });
 
         rp(options)
             .then(function (resp) {
@@ -108,6 +108,7 @@ io.sockets.on('connection', function (socket) {
         log_socket.info('user(id|name): '+room.userId + ' '+ room.username +' join to room:'+ room.room);
 
         socket.on('message', data => {
+            //console.log('message data ');
             var options = {
                 uri: url+ '/check-token/',
                 headers: {
@@ -132,12 +133,14 @@ io.sockets.on('connection', function (socket) {
             msg.from = data.user;
             msg.time = new Date();
             msg.room = room.room;
-            tools.message.set_message(msg, function (err, messageid) {
-                msg._id = messageid;
-                io.sockets.in(room.room).emit('message', msg);
-                log_socket.info('room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '+
-                    data.user.firstName + ' | ' + data.message);
-            });
+            tools.message.set_message(msg)
+                .then(function (resp) {
+                    msg.msg_id = resp;
+                    console.log('resp = ', resp);
+                    io.sockets.in(room.room).emit('message', msg);
+                    log_socket.info('room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '+
+                        data.user.firstName + ' | ' + data.message);
+                })
             });
 
         socket.on('writing', data => {
@@ -208,9 +211,14 @@ io.sockets.on('connection', function (socket) {
                         message: data.message,
                         image: image.data.imageUrl,
                         from: data.user,
-                        time: new Date()
+                        time: new Date(),
+                        room: room.room
                     };
-                    io.sockets.in(room.room).emit('image', msg);
+                    tools.message.set_message(msg, function (err, resp) {
+                        msg._id = resp;
+                        console.log(msg,resp);
+                        io.sockets.in(room.room).emit('image', msg);
+                    });
                     fs.unlinkSync(data.image_name.toString());
                     log_socket.info('Image upload:: room:'+ room.room +' user(id|name|imageUrl): '+data.user.id +' | '
                         + data.user.firstName +' | '+image.data.imageUrl);

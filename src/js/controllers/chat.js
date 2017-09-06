@@ -206,6 +206,7 @@
         });
         //message
         msgSocket.on('message', function (resp) {
+            console.log('on message: ',resp);
             if (resp.from.id === userData.id) {
                 if (resp.errors) {
                     $scope.doneLoading = true;
@@ -320,6 +321,7 @@
         });
 
         var addMessage = function (message) {
+            console.log('emit msg', message);
             msgSocket.emit('message', message);
         };
         $scope.closeUpload = function () {

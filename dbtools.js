@@ -8,7 +8,7 @@ require('dotenv').config({
 
 module.exports = {
     message: {
-        get_history: function (room, user_id, cb) {
+        get_history: function (room, user_id, page, cb) {
             db.Message.find({room: room}, function (err, resp) {
                 if (err) {
                     console.log('Message get_history');
@@ -17,10 +17,11 @@ module.exports = {
                 messages = resp.map(function (e) {
                     let msg = {
                         message: e.message,
-                        '_id': e._id,
+                        msg_id: e._id,
                         likes: e.likes.length,
                         time: e.time,
-                        from: e.from
+                        from: e.from,
+                        image: e.image
                     };
                     e.likes.find(function (el) {
                         if (el.user === user_id) {
@@ -29,15 +30,17 @@ module.exports = {
                     });
                     return msg;
                 });
+               // console.log('messages : ', messages);
                 cb(null, messages);
-            });
+            }).skip(0 * parseInt(process.env.HISTORY_LIMIT)).limit(parseInt(process.env.HISTORY_LIMIT));
         },
-        set_message: function (message, cb) {
-            db.Message.create(message, function (err, resp) {
+        set_message: function (message) {
+            return db.Message.create(message, function (err, resp) {
                 if (err) {
                     console.log('Message set_message', err);
+                } else {
+                    return resp._id;
                 }
-                cb(null, resp._id);
             });
         }
     },
