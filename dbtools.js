@@ -9,8 +9,11 @@ require('dotenv').config({
 module.exports = {
     message: {
         get_history: function (room, user_id, page, cb) {
+            if (!page) {
+                page = 0;
+            }
+            console.log('Message get_history', room, user_id, page);
             db.Message.find({room: room}, function (err, resp) {
-                console.log('Message get_history',);
 
                 if (err) {
                     console.log('Message get_history');
@@ -32,8 +35,10 @@ module.exports = {
                     });
                     return msg;
                 });
-                cb(null, messages);
-            }).skip(parseInt(page) * parseInt(process.env.HISTORY_LIMIT)).limit(parseInt(process.env.HISTORY_LIMIT));
+                cb(null, messages.reverse());
+            }).skip(parseInt(page) * parseInt(process.env.HISTORY_LIMIT))
+                .limit(parseInt(process.env.HISTORY_LIMIT))
+                .sort({_id: -1});
         },
         set_message: function (message) {
             return db.Message.create(message, function (err, resp) {

@@ -125,11 +125,17 @@
 
         }
         $scope.loadMore = function () {
+            $scope.loadMoreFlag = true;
             $scope.page = !$scope.page ? 1 : parseInt($scope.page) + 1;
-            console.log($scope.page);
             ChatService.loadMore({room: $stateParams.list, page: $scope.page})
                 .then(function (resp) {
-                    console.log('load more',resp);
+                    var newScroll = 0;
+                    for ( var i = resp.data.length - 1; i >= 0 ; i-- ) {
+                        $scope.messages.unshift(resp.data[i]);
+                        var elem = angular.element(document.getElementsByClassName('message-wrapper'));
+                        newScroll += elem[0].clientHeight;
+                    }
+                    $ionicScrollDelegate.scrollTo(0, newScroll);
                 })
                 .finally(function () {
                     $scope.$broadcast('scroll.refreshComplete');
@@ -192,7 +198,7 @@
                 }
             }
             if(resp.history) {
-              $scope.messages = resp.history;
+                $scope.messages = resp.history;
             }
             $scope.doneLoading = true;
             $scope.$apply();
@@ -215,6 +221,7 @@
         });
         //message
         msgSocket.on('message', function (resp) {
+            $scope.loadMoreFlag = false;
             if (resp.from.id === userData.id) {
                 if (resp.errors) {
                     $scope.doneLoading = true;
@@ -412,14 +419,16 @@
         }
 
         $scope.refreshScroll = function (scrollBottom, timeout) {
-            $timeout(function () {
-                scrollBottom = scrollBottom || $scope.scrollDown;
-                viewScroll.resize();
-                if (scrollBottom) {
-                    viewScroll.scrollBottom(true);
-                }
-                $scope.checkScroll();
-            }, timeout || 1000);
+            if (!$scope.loadMoreFlag) {
+                $timeout(function () {
+                    scrollBottom = scrollBottom || $scope.scrollDown;
+                    viewScroll.resize();
+                    if (scrollBottom) {
+                        viewScroll.scrollBottom(true);
+                    }
+                    $scope.checkScroll();
+                }, timeout || 1000);
+            }
         };
         $scope.scrollDown = true;
         $scope.checkScroll = function () {

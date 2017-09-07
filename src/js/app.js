@@ -1,6 +1,6 @@
 angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate','monospaced.elastic', 'pascalprecht.translate'])
 .run(['$ionicPlatform',
-      function($ionicPlatform,$httpProvider) {
+      function($ionicPlatform, $httpProvider) {
   $ionicPlatform.ready(function() {
   });
 }])
