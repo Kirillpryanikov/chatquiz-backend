@@ -96,6 +96,36 @@ app.get('/history/:room/:page', (req, res) => {
         });
 });
 
+app.get('/download_history', function(req, res) {
+    // const options = {
+    //     uri: url+ '/check-token/',
+    //     headers: {
+    //         'User-Agent': 'Request-Promise',
+    //         'x-app-key': app_key,
+    //         'x-auth-token': req.headers['x-auth-token']
+    //     },
+    //     json: true
+    // };
+
+    // rp(options)
+    //     .then(function() {
+            tools.message.download_history(function(err, history) {
+                if (err) {
+                    console.log('Download history ERROR: ', err);
+                } else {
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json-my-attachment',
+                        "content-disposition": "attachment; filename=\"history_message.json\""
+                    });
+                    res.end(JSON.stringify(history));
+                }
+            });
+        // })
+        // .catch(function(err) {
+        //     console.log(err);
+        // });
+});
+
 app.use(function(req, res, next) {
     log_errors.error('HTTP error  url:'+req.url);
     res.status(404).send('Sorry cant find that!');

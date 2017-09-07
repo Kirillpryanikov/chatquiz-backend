@@ -10,7 +10,7 @@ module.exports = {
     message: {
         get_history: function (room, user_id, page, cb) {
             db.Message.find({room: room}, function (err, resp) {
-                console.log('Message get_history',);
+                console.log('Message get_history');
 
                 if (err) {
                     console.log('Message get_history');
@@ -34,6 +34,17 @@ module.exports = {
                 });
                 cb(null, messages);
             }).skip(parseInt(page) * parseInt(process.env.HISTORY_LIMIT)).limit(parseInt(process.env.HISTORY_LIMIT));
+        },
+        download_history: function(cb) {
+            db.Message.find(function(err, resp) {
+
+                if (err) {
+                    console.log('Download history error');
+                } else {
+                    cb(null, resp);
+                }
+
+            })
         },
         set_message: function (message) {
             return db.Message.create(message, function (err, resp) {
