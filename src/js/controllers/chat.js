@@ -124,6 +124,17 @@
            // $scope.topic_title = title;
 
         }
+        $scope.loadMore = function () {
+            $scope.page = !$scope.page ? 1 : parseInt($scope.page) + 1;
+            console.log($scope.page);
+            ChatService.loadMore({room: $stateParams.list, page: $scope.page})
+                .then(function (resp) {
+                    console.log('load more',resp);
+                })
+                .finally(function () {
+                    $scope.$broadcast('scroll.refreshComplete');
+                });
+        }
         $scope.writing = function () {
             var _now = Date.now();
           if($scope.input.message && $scope.input.message.length > 0 && (_now - _lastWritingEvent > 5000)) {
@@ -146,8 +157,7 @@
             if(!$scope.messages[index].likes) {
                 $scope.messages[index].likes = 0;
             }
-
-            msgSocket.emit('like', {message_id: $scope.messages[index]._id, user_id: $scope.user.id});
+            msgSocket.emit('like', {message_id: $scope.messages[index].msg_id, user_id: $scope.user.id});
         };
         var msgSocket = SockService.connect();
         if (!$scope.messages || $scope.messages === undefined) {
@@ -182,7 +192,6 @@
                 }
             }
             if(resp.history) {
-              console.log('Histoty', resp.history);
               $scope.messages = resp.history;
             }
             $scope.doneLoading = true;
@@ -192,7 +201,7 @@
         msgSocket.on('like', function (resp) {
             if(resp.message_id ) {
                 $scope.messages.find(function (e, i) {
-                    if(e._id === resp.message_id) {
+                    if(e.msg_id === resp.message_id) {
                         if($scope.messages[i].likes !== resp.count){
                             $scope.messages[i].likes = resp.count;
                             if(resp.user_id === $scope.user.id ){
@@ -206,7 +215,6 @@
         });
         //message
         msgSocket.on('message', function (resp) {
-            console.log('on message: ',resp);
             if (resp.from.id === userData.id) {
                 if (resp.errors) {
                     $scope.doneLoading = true;
@@ -316,12 +324,10 @@
 
 
         $scope.$watch('input.message', function (newValue, oldValue) {
-            //console.log('input.message $watch, newValue ' + newValue);
             //if (!newValue) newValue = '';
         });
 
         var addMessage = function (message) {
-            console.log('emit msg', message);
             msgSocket.emit('message', message);
         };
         $scope.closeUpload = function () {
@@ -400,7 +406,6 @@
 
         // this keeps the keyboard open on a device only after sending a message, it is non obtrusive
         function keepKeyboardOpen() {
-            // console.log('keepKeyboardOpen');
             // txtInput.one('blur', function () {
             // 	txtInput[0].focus();
             // });

@@ -96,6 +96,9 @@
               ]
             }
           }
+          me.loadMore = function (data) {
+            return $http.get(BaseURL + 'history/' + data.room + '/' + data.page, data);
+          }
 
         return me;
     }

@@ -10,6 +10,8 @@ module.exports = {
     message: {
         get_history: function (room, user_id, page, cb) {
             db.Message.find({room: room}, function (err, resp) {
+                console.log('Message get_history',);
+
                 if (err) {
                     console.log('Message get_history');
                 }
@@ -30,9 +32,8 @@ module.exports = {
                     });
                     return msg;
                 });
-               // console.log('messages : ', messages);
                 cb(null, messages);
-            }).skip(0 * parseInt(process.env.HISTORY_LIMIT)).limit(parseInt(process.env.HISTORY_LIMIT));
+            }).skip(parseInt(page) * parseInt(process.env.HISTORY_LIMIT)).limit(parseInt(process.env.HISTORY_LIMIT));
         },
         set_message: function (message) {
             return db.Message.create(message, function (err, resp) {
@@ -42,6 +43,42 @@ module.exports = {
                     return resp._id;
                 }
             });
+        },
+        set_like: function (data, cb) {
+            if (data.message_id) {
+                db.Message.findOne({_id: data.message_id}, function (err, list) {
+                    if (err) {
+                        console.log('error findOne');
+                    } else {
+                        if (list.likes.length > 0) {
+                            list.likes.find(function (e, i, arr) {
+                                if (e && e.user === data.user_id) {
+                                    list.likes.splice(i, 1);
+                                } else {
+                                    if (!arr[i + 1]) {
+                                        list.likes.push({user: data.user_id});
+                                    }
+                                }
+                            });
+                        } else {
+                            list.likes.push({user: data.user_id});
+                        }
+
+                        list.save(function (err) {
+                            if (err) {
+                                console.log('error save:', err);
+                            } else {
+                                let result = {
+                                    message_id: data.message_id,
+                                    count: list.likes.length,
+                                    user_id: data.user_id
+                                };
+                                cb(null, result);
+                            }
+                        });
+                    }
+                });
+            }
         }
     },
     room: {

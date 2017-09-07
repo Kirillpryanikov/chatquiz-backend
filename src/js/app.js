@@ -71,6 +71,7 @@ angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate','monospaced.elas
 
       if(data.hasOwnProperty('token')) {
         config.headers['X-Auth-Token'] = data.token;
+        config.headers['X-User-Id'] = data.id;
       }
 
       return config;

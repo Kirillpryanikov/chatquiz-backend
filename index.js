@@ -68,6 +68,34 @@ app.use('/apiproxy', (req, res) => {
     const apiurl = url + req.url;
     req.pipe(request(apiurl)).pipe(res);
 });
+
+app.get('/history/:room/:page', (req, res) => {
+    var options = {
+        uri: url+ '/check-token/',
+        headers: {
+            'User-Agent': 'Request-Promise',
+            'x-app-key': app_key,
+            'x-auth-token': req.headers['x-auth-token']
+        },
+        json: true
+    };
+    rp(options)
+        .then(function () {
+            tools.message.get_history(req.params.room, req.params['x-User-Id'], req.params.page, function (err, resp) {
+                if(resp) {
+                    console.log('resp',resp);
+                   res.json(resp);
+                }
+            });
+        })
+        .catch(function (err) {
+            log_errors.error('SOCKET room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | ' +
+                data.user.firstName + ' | ', err.response.body.message);
+            msg.errors = err.response.body.message;
+            socket.emit('message', msg);
+        });
+});
+
 app.use(function(req, res, next) {
     log_errors.error('HTTP error  url:'+req.url);
     res.status(404).send('Sorry cant find that!');
@@ -90,12 +118,12 @@ io.sockets.on('connection', function (socket) {
                 socket.emit('room', {'topic': resp});
             }
         });
-        // tools.message.get_history(room.room, room.userId, 0, function (err, resp) {
-        //     if(resp) {
-        //
-        //         socket.emit('room', {'history': resp});
-        //     }
-        // });
+        tools.message.get_history(room.room, room.userId, 0, function (err, resp) {
+            if(resp) {
+
+                socket.emit('room', {'history': resp});
+            }
+        });
 
         rp(options)
             .then(function (resp) {
@@ -108,7 +136,6 @@ io.sockets.on('connection', function (socket) {
         log_socket.info('user(id|name): '+room.userId + ' '+ room.username +' join to room:'+ room.room);
 
         socket.on('message', data => {
-            //console.log('message data ');
             var options = {
                 uri: url+ '/check-token/',
                 headers: {
@@ -135,8 +162,7 @@ io.sockets.on('connection', function (socket) {
             msg.room = room.room;
             tools.message.set_message(msg)
                 .then(function (resp) {
-                    msg.msg_id = resp;
-                    console.log('resp = ', resp);
+                    msg.msg_id = resp._id;
                     io.sockets.in(room.room).emit('message', msg);
                     log_socket.info('room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '+
                         data.user.firstName + ' | ' + data.message);
@@ -147,39 +173,9 @@ io.sockets.on('connection', function (socket) {
             io.sockets.in(room.room).emit('writing', data);
         });
         socket.on('like', data => {
-            if (data.message_id) {
-                db.Message.findOne({_id: data.message_id}, function(err, list) {
-                    if (err) {
-                    console.log('error findOne');
-                    } else {
-                        if(list.likes.length > 0) {
-                            list.likes.find(function (e, i, arr) {
-                                if (e && e.user === data.user_id) {
-                                    list.likes.splice(i, 1);
-                                } else {
-                                    if(!arr[i + 1]) {
-                                        list.likes.push({user:data.user_id});
-                                    }
-                                }
-                            });
-                        } else {
-                            list.likes.push({user: data.user_id});
-                        }
-
-                        list.save(function (err,res) {
-                            if(err) {
-                                console.log('error save:', err);
-                            } else {
-                                io.sockets.in(room.room).emit('like', {
-                                    message_id: data.message_id,
-                                    count: list.likes.length,
-                                    user_id: data.user_id
-                                });
-                            }
-                        });
-                    }
-                });
-            }
+            tools.message.set_like(data, function (err, resp) {
+                io.sockets.in(room.room).emit('like', resp);
+            })
         });
 
         socket.on('image', data => {
@@ -215,8 +211,7 @@ io.sockets.on('connection', function (socket) {
                         room: room.room
                     };
                     tools.message.set_message(msg, function (err, resp) {
-                        msg._id = resp;
-                        console.log(msg,resp);
+                        msg.msg_id = resp;
                         io.sockets.in(room.room).emit('image', msg);
                     });
                     fs.unlinkSync(data.image_name.toString());

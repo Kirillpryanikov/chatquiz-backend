@@ -42,6 +42,10 @@
 	</div>
 	<ion-content overflow-scroll="false" has-bouncing="true" class="has-header has-footer" delegate-handle="userMessageScroll"
 		on-scroll="checkScroll()">
+		<ion-refresher
+				pulling-text="loading ... "
+				on-refresh="loadMore()">
+		</ion-refresher>
 
 		<div ng-repeat="message in messages track by $index" class="message-wrapper animated fadeInUp" ng-init="$last && refreshScroll(user.id === message.from.id)" ng-if="!message.errors">
 
