@@ -181,7 +181,6 @@ io.sockets.on('connection', function (socket) {
         socket.on('image', data => {
             let file = new Buffer(data.image, 'base64');
             fs.writeFileSync(data.image_name.toString(), data.image.split(',')[1], 'base64');
-
             let options = {
                 method: 'POST',
                 uri: `${url}/list/${room.room}/chat-image-upload/`,
@@ -210,7 +209,8 @@ io.sockets.on('connection', function (socket) {
                         time: new Date(),
                         room: room.room
                     };
-                    tools.message.set_message(msg, function (err, resp) {
+                tools.message.set_message(msg)
+                    .then(function (resp) {
                         msg.msg_id = resp;
                         io.sockets.in(room.room).emit('image', msg);
                     });

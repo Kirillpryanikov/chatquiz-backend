@@ -12,7 +12,6 @@ module.exports = {
             if (!page) {
                 page = 0;
             }
-            console.log('Message get_history', room, user_id, page);
             db.Message.find({room: room}, function (err, resp) {
 
                 if (err) {
