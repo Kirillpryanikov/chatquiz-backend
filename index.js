@@ -12,7 +12,6 @@ const rfs = require('rotating-file-stream');
 const winston = require('winston');
 const app = express();
 const mongoose = require('mongoose');
-const db = require('./config/db/models');
 const tools = require('./dbtools.js');
 
 
@@ -70,7 +69,7 @@ app.use('/apiproxy', (req, res) => {
 });
 
 app.get('/history/:room/:page', (req, res) => {
-    var options = {
+    const options = {
         uri: url+ '/check-token/',
         headers: {
             'User-Agent': 'Request-Promise',
@@ -96,15 +95,45 @@ app.get('/history/:room/:page', (req, res) => {
         });
 });
 
-app.use(function(req, res, next) {
-    log_errors.error('HTTP error  url:'+req.url);
+app.get('/download_history', function(req, res) {
+    const options = {
+        uri: url + '/check-token/',
+        headers: {
+            'User-Agent': 'Request-Promise',
+            'x-app-key': app_key,
+            'x-auth-token': req.headers['x-auth-token']
+        },
+        json: true
+    };
+
+    rp(options)
+        .then(function() {
+            tools.message.download_history(function(err, history) {
+                if (err) {
+                    console.log('Download history ERROR: ', err);
+                } else {
+                    res.writeHead(200, {
+                        'Content-Type': 'application/json-my-attachment',
+                        "content-disposition": "attachment; filename=\"history_message.json\""
+                    });
+                    res.end(JSON.stringify(history));
+                }
+            });
+        })
+        .catch(function(err) {
+            console.log(err);
+        });
+});
+
+app.use(function(req, res) {
+    log_errors.error('HTTP error  url:' + req.url);
     res.status(404).send('Sorry cant find that!');
 });
 
 io.sockets.on('connection', function (socket) {
     let msg ={};
     socket.on('room', function (room) {
-        var options = {
+        const options = {
             uri: `${url}/list/${room.room}/`,
             headers: {
                 'User-Agent': 'Request-Promise',
@@ -136,7 +165,7 @@ io.sockets.on('connection', function (socket) {
         log_socket.info('user(id|name): '+room.userId + ' '+ room.username +' join to room:'+ room.room);
 
         socket.on('message', data => {
-            var options = {
+            const options = {
                 uri: url+ '/check-token/',
                 headers: {
                     'User-Agent': 'Request-Promise',

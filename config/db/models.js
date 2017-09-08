@@ -27,7 +27,29 @@ let Message = new mongoose.Schema({
     ],
     time: {type: Date, default: Date.now, required: true},
     room: String
-}, {capped: {size: 10000000000, max: HISTORY_MAX_SIZE, autoIndexId: true}});
+});
+
+Message.pre('save', function (next, done) {
+    mongoose.models['Message'].find({}, function(err, data) {
+        if (err){
+            return next(err);
+        }
+        if (data.length >= HISTORY_MAX_SIZE) {
+            let countOfIndex = data.length - HISTORY_MAX_SIZE;
+            let ids = [];
+            for (let i=0; i < countOfIndex; i++) {
+                if(data[i] && data[i]._id) {
+                    ids[i] = data[i]._id;
+                }
+            }
+            ids.forEach((mes) => {
+                mongoose.models['Message'].remove({'_id': mongoose.Types.ObjectId(mes)}, function () {
+                });
+            });
+        }
+    });
+    next();
+});
 
 module.exports = {
     Room: mongoose.model('Room', Room),

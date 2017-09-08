@@ -13,7 +13,6 @@ module.exports = {
                 page = 0;
             }
             db.Message.find({room: room}, function (err, resp) {
-
                 if (err) {
                     console.log('Message get_history');
                 }
@@ -39,8 +38,17 @@ module.exports = {
                 .limit(parseInt(process.env.HISTORY_LIMIT))
                 .sort({_id: -1});
         },
-        set_message: function (message) {
-            return db.Message.create(message, function (err, resp) {
+        download_history: function (cb) {
+            db.Message.find(function (err, resp) {
+                if (err) {
+                    console.log('Download history error');
+                } else {
+                    cb(null, resp);
+                }
+            });
+        },
+        set_message: function (data) {
+            return db.Message.create(data, function (err, resp) {
                 if (err) {
                     console.log('Message set_message', err);
                 } else {
@@ -54,7 +62,7 @@ module.exports = {
                     if (err) {
                         console.log('error findOne');
                     } else {
-                        if (list.likes.length > 0) {
+                        if (list && list.likes.length > 0) {
                             list.likes.find(function (e, i, arr) {
                                 if (e && e.user === data.user_id) {
                                     list.likes.splice(i, 1);
