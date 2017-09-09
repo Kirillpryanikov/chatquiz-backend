@@ -14,11 +14,10 @@
     function MainCtrl($scope, $rootScope, $state, $stateParams, ChatService, StorageService,
                       $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q, $location) {
         $rootScope.usr = StorageService.getAuthData();
-
         $scope.logout = function () {
-            ChatService.logOut($stateParams.list);
+            ChatService.logOut($stateParams.list, $stateParams.tv);
             $rootScope.usr = false;
-        }
+        };
     }
 
     // login
@@ -31,8 +30,6 @@
                        $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal) {
 
         $scope.data = {};
-
-        // An alert dialog
         $scope.showAlert = function () {
             var alertPopup = $ionicPopup.alert({
                 title: 'Oops...',
@@ -59,7 +56,11 @@
                         StorageService.setAuthData(resp.data);
                         $scope.doneLoading = false;
                         $rootScope.usr = resp.data;
-                        $state.go('chat', {list: $stateParams.list});
+                        if ($stateParams.tv == 'tv') {
+                            $state.go('tv', {list: $stateParams.list, tv: $stateParams.tv});
+                        } else {
+                            $state.go('chat', {list: $stateParams.list});
+                        }
                     })
                     .catch(function (resp) {
 
@@ -94,9 +95,11 @@
     function ChatController($scope, $rootScope, $state, $stateParams, ChatService,
                             $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter,
                             $ionicModal, SockService, userData, StorageService, translate) {
-
+        if (!userData) {
+            $state.go('login', { list: $stateParams.list, tv: $stateParams.tv });
+        }
         var _lastWritingEvent = 0;
-
+        $scope.tv = $stateParams.tv === 'tv' ? true : false;
         $scope.writingNow = [];
 
         var blopFx = new Howl({
@@ -178,116 +181,118 @@
                 }
             });
         };
+        if(userData) {
+            msgSocket.on('connect', function () {
+                $scope.doneLoading = false;
+                msgSocket.emit('room', {'room': $stateParams.list, 'userId': userData.id, 'username': userData.firstName,'token': userData.token});
 
-        msgSocket.on('connect', function () {
-            $scope.doneLoading = false;
-            msgSocket.emit('room', {'room': $stateParams.list, 'userId': userData.id, 'username': userData.firstName,'token': userData.token});
-
-        });
-        //message
-        $scope.owner = {};
-        $scope.topic_edit = false;
-        msgSocket.on('room', function (resp) {
-            $scope.owner = resp;
-            if(!$scope.topic_title || resp.owner_id || resp.topic) {
-                if(resp.topic ) {
-                    $scope.topic_title = resp.topic;
-                }
-                if(!$scope.topic_title && $scope.owner.owner_id)  {
-                    $scope.topic_title = translate.instant('SET_TOPIC');
-                }
-            }
-            if(resp.history) {
-                $scope.messages = resp.history;
-            }
-            $scope.doneLoading = true;
-            $scope.$apply();
-        });
-        //like
-        msgSocket.on('like', function (resp) {
-            if(resp.message_id ) {
-                $scope.messages.find(function (e, i) {
-                    if(e.msg_id === resp.message_id) {
-                        if($scope.messages[i].likes !== resp.count){
-                            $scope.messages[i].likes = resp.count;
-                            if(resp.user_id === $scope.user.id ){
-                                $scope.messages[i].liked = !$scope.messages[i].liked;
-                            }
-                        }
+            });
+            //message
+            $scope.owner = {};
+            $scope.topic_edit = false;
+            msgSocket.on('room', function (resp) {
+                $scope.owner = resp;
+                if(!$scope.topic_title || resp.owner_id || resp.topic) {
+                    if(resp.topic ) {
+                        $scope.topic_title = resp.topic;
                     }
-                });
-            }
-            $scope.$apply();
-        });
-        //message
-        msgSocket.on('message', function (resp) {
-            $scope.loadMoreFlag = false;
-            if (resp.from.id === userData.id) {
-                if (resp.errors) {
-                    $scope.doneLoading = true;
-                    $scope.showAlert(resp.errors);
-                    ChatService.logOut($stateParams.list);
+                    if(!$scope.topic_title && $scope.owner.owner_id)  {
+                        $scope.topic_title = translate.instant('SET_TOPIC');
+                    }
                 }
-            }
-            if(resp.topic) {
-                $scope.topic_title = resp.topic;
-            }
-            resp.ui = {};
-            resp.ui.time = moment().diff(resp.time) > 86400000 ? moment(resp.time).format('DD/MM/YYYY') : moment(resp.time).format('H:mm');
-            $scope.messages.push(resp);
-            $scope.$apply();
-            blopFx.play();
-        });
-        //writing
-        msgSocket.on('writing', function (u) {
-
-            if(u.id === userData.id)
-                return false;
-
-            u.timerId = $timeout(function() { removeFromWritingNow(u) }, 6000);
-
-            if($scope.writingNow.length === 0)
-                $scope.writingNow.push(u);
-            else
-                angular.forEach($scope.writingNow, function(user, key) {
-                    if(user.id === u.id)
-                    {
-                        $timeout.cancel(user.timerId);
-                        user.timerId = u.timerId;
-                        return false;
-                    }
-                    if(key === $scope.writingNow.length)
-                        $scope.writingNow.push(u);
-                });
-
-        });
-
-        //images
-        msgSocket.on('image', function (resp) {
-            if (resp.from.id === userData.id) {
-                if (resp.errors) {
-                    $scope.doneLoading = true;
-                    var out = '';
-                    if (typeof resp.errors.message === 'object') {
-                        for (var i in resp.errors.message) {
-                            if (typeof resp.errors.message[i] === 'object') {
-                                for (var j in resp.errors.message[i]) {
-                                    out += '<p>' + resp.errors.message[i][j] + "</p>";
-                                }
-                            } else {
-                                out += '<p>' + resp.errors.message + "</p>";
-                            }
-                        }
-                    } else {
-                        out += '<p>' + resp.errors.message + "</p>";
-                    }
-                    $scope.showAlert(out);
+                if(resp.history) {
+                    $scope.messages = resp.history;
                 }
                 $scope.doneLoading = true;
-            }
-            $scope.messages.push(resp);
-            $scope.$apply();
-        });
+                $scope.$apply();
+            });
+            //like
+            msgSocket.on('like', function (resp) {
+                if(resp.message_id ) {
+                    $scope.messages.find(function (e, i) {
+                        if(e.msg_id === resp.message_id) {
+                            if($scope.messages[i].likes !== resp.count){
+                                $scope.messages[i].likes = resp.count;
+                                if(resp.user_id === $scope.user.id ){
+                                    $scope.messages[i].liked = !$scope.messages[i].liked;
+                                }
+                            }
+                        }
+                    });
+                }
+                $scope.$apply();
+            });
+            //message
+            msgSocket.on('message', function (resp) {
+                $scope.loadMoreFlag = false;
+                if (resp.from.id === userData.id) {
+                    if (resp.errors) {
+                        $scope.doneLoading = true;
+                        $scope.showAlert(resp.errors);
+                        ChatService.logOut($stateParams.list);
+                    }
+                }
+                if(resp.topic) {
+                    $scope.topic_title = resp.topic;
+                }
+                resp.ui = {};
+                resp.ui.time = moment().diff(resp.time) > 86400000 ? moment(resp.time).format('DD/MM/YYYY') : moment(resp.time).format('H:mm');
+                $scope.messages.push(resp);
+                $scope.$apply();
+                blopFx.play();
+            });
+            //writing
+            msgSocket.on('writing', function (u) {
+
+                if(u.id === userData.id)
+                    return false;
+
+                u.timerId = $timeout(function() { removeFromWritingNow(u) }, 6000);
+
+                if($scope.writingNow.length === 0)
+                    $scope.writingNow.push(u);
+                else
+                    angular.forEach($scope.writingNow, function(user, key) {
+                        if(user.id === u.id)
+                        {
+                            $timeout.cancel(user.timerId);
+                            user.timerId = u.timerId;
+                            return false;
+                        }
+                        if(key === $scope.writingNow.length)
+                            $scope.writingNow.push(u);
+                    });
+
+            });
+
+            //images
+            msgSocket.on('image', function (resp) {
+                if (resp.from.id === userData.id) {
+                    if (resp.errors) {
+                        $scope.doneLoading = true;
+                        var out = '';
+                        if (typeof resp.errors.message === 'object') {
+                            for (var i in resp.errors.message) {
+                                if (typeof resp.errors.message[i] === 'object') {
+                                    for (var j in resp.errors.message[i]) {
+                                        out += '<p>' + resp.errors.message[i][j] + "</p>";
+                                    }
+                                } else {
+                                    out += '<p>' + resp.errors.message + "</p>";
+                                }
+                            }
+                        } else {
+                            out += '<p>' + resp.errors.message + "</p>";
+                        }
+                        $scope.showAlert(out);
+                    }
+                    $scope.doneLoading = true;
+                }
+                $scope.messages.push(resp);
+                $scope.$apply();
+            });
+        } //end of > if (userData)
+
 
         msgSocket.on('disconnect', function () {
             $scope.showAlert(translate.instant('SOCKET_SERVER_DOWN_MSG'));

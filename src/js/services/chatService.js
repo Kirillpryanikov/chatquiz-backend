@@ -43,9 +43,9 @@
         var me = {};
         var apiUrl = BaseURL;
 
-        me.logOut = function (_list) {
+        me.logOut = function (_list, _tv) {
           $window.localStorage['_user'] = false;
-          $state.go('login', { list: _list });
+          $state.go('login', { list: _list, tv: _tv });
         };
 
         me.login = function(data){
