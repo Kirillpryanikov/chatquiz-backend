@@ -13,6 +13,11 @@ const process = require('process');
 const rfs = require('rotating-file-stream');
 const winston = require('winston');
 const app = express();
+const mongoose = require('mongoose');
+const db = require('./config/db/models');
+
+
+
 require('dotenv').config({
     path: path.resolve('.env')
 });
@@ -20,7 +25,7 @@ require('dotenv').config({
 const port = process.env.PORT || 8080;
 const url = process.env.APIURL;
 const app_key = process.env.APPKEY;
-
+const color = process.env.COLOR;
 const server = http.createServer(app);
 const io = socketIO(server);
 process.title = "chatMicroS";
@@ -71,29 +76,56 @@ app.use(function(req, res, next) {
 });
 
 io.sockets.on('connection', function (socket) {
-
+    let msg ={};
     socket.on('room', function (room) {
-        console.log(room);
+        var options = {
+            uri: `${url}/list/${room.room}/`,
+            headers: {
+                'User-Agent': 'Request-Promise',
+                'x-app-key': app_key,
+                'x-auth-token': room.token
+            },
+            json: true
+        };
+
+        db.Room.findOne({room_id: room.room}, function (err, topic) {
+            if (err) {
+                console.log('Mongo Update Err: ',err);
+            }
+            if(topic && topic.topic ) {
+               socket.emit('room', {'topic':topic.topic});
+            }
+        });
+
+        rp(options)
+            .then(function (resp) {
+                socket.emit('room', {'owner_id':resp.data.userId,'color':color});
+            })
+            .catch(function (err) {
+                console.log('resp err');
+            });
         socket.join(room.room);
         log_socket.info('user(id|name): '+room.userId + ' '+ room.username +' join to room:'+ room.room);
 
         socket.on('message', data => {
-            var token = data.user.token;
             var options = {
                 uri: url+ '/check-token/',
                 headers: {
                     'User-Agent': 'Request-Promise',
                     'x-app-key': app_key,
-                    'x-auth-token': token
+                    'x-auth-token': data.user.token
                 },
                 json: true
             };
-
-            let msg = {
-                message: data.message,
-                from: data.user,
-                time: new Date()
-            };
+            msg.message = data.message;
+            if(data.topic) {
+                msg.topic = data.topic.substring(0, process.env.TOPIC_LENGTH);
+                db.Room.update({room_id: room.room},{topic: msg.topic},{upsert: true}, function (err, res) {
+                    console.log(err);
+                });
+            }
+            msg.from = data.user;
+            msg.time = new Date();
 
             log_socket.info('room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '+ data.user.firstName + ' | ' + data.message);
 
@@ -116,7 +148,6 @@ io.sockets.on('connection', function (socket) {
         socket.on('image', data => {
             let file = new Buffer(data.image, 'base64');
             fs.writeFileSync(data.image_name.toString(), data.image.split(',')[1], 'base64');
-            let token = data.token;
 
             let options = {
                 method: 'POST',
@@ -124,7 +155,7 @@ io.sockets.on('connection', function (socket) {
                 headers: {
                     'User-Agent': 'Request-Promise',
                     'x-app-key': app_key,
-                    'x-auth-token': token
+                    'x-auth-token':  data.token
                 },
                 formData: {
                     file: {
@@ -145,7 +176,6 @@ io.sockets.on('connection', function (socket) {
                     from: data.user,
                     time: new Date()
                 };
-
                 io.sockets.in(room.room).emit('image', msg);
                 fs.unlinkSync(data.image_name.toString());
                 log_socket.info('Image upload:: room:'+ room.room +' user(id|name|imageUrl): '+data.user.id +' | '+ data.user.firstName +' | '+image.data.imageUrl);
@@ -170,6 +200,12 @@ io.sockets.on('connection', function (socket) {
 
 });
 
+mongoose.connect('mongodb://localhost:27017/chat_service_db',function (err) {
+    if(err){
+        console.log('Mongo Connect Error: ',err);
+    }
+    console.log('Mongo connected');
+});
 
 server.listen(port, () => {
     console.log(`Socket server started listen on port: ${port}`);
