@@ -40,8 +40,12 @@
 			<i class="icon ion-load-c"></i>
 		</div>
 	</div>
-	<ion-content overflow-scroll="false" has-bouncing="true" class="has-header has-footer" delegate-handle="userMessageScroll"
+	<ion-content overflow-scroll="false" has-bouncing="true" ng-class="{'tv': tv}" class="has-header has-footer" delegate-handle="userMessageScroll"
 		on-scroll="checkScroll()">
+		<ion-refresher
+				pulling-text="loading ... "
+				on-refresh="loadMore()">
+		</ion-refresher>
 
 		<div ng-repeat="message in messages track by $index" class="message-wrapper animated fadeInUp" ng-init="$last && refreshScroll(user.id === message.from.id)" ng-if="!message.errors">
 
@@ -101,7 +105,7 @@
 	</ion-content>
 
 	<!-- <form name="sendMessageForm" ng-submit="sendMessage(sendMessageForm)" novalidate> -->
-		<ion-footer-bar class="bar-stable item-input-inset message-footer animated fadeInUp" keyboard-attach ng-show="!img_review">
+		<ion-footer-bar class="bar-stable item-input-inset message-footer animated fadeInUp" keyboard-attach  ng-show="!tv" ng-show="!img_review">
 
 			<div class="writing-now animated fadeInRight" ng-if="writingNow.length > 0">
 				<p><span ng-repeat="user in writingNow track by $index">{{user.firstName}}, </span>{{'IS_WRITING_NOW' | translate}}</p>

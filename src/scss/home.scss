@@ -6,12 +6,21 @@ h1, h2, h3, h4, h5, p, span, div, input, button, select, textarea {
   z-index: 99999;
   position: relative;
 }
-
+$tvfont: 22px;
+$tvlineh: 35px;
 .homeView {
   /* allows the bar-footer to be elastic /*
   /* optionally set a max-height */
   /* maxlength on the textarea will prevent /*
   /* it from getting too large also */
+  .tv {
+    .chat-bubble,
+    .chat-bubble div,
+    .chat-bubble span {
+      font-size: $tvfont;
+      line-height: $tvlineh;
+    }
+  }
   .bar-footer {
     overflow: visible !important;
     position: absolute;

@@ -1,6 +1,6 @@
 angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate','monospaced.elastic', 'pascalprecht.translate'])
 .run(['$ionicPlatform',
-      function($ionicPlatform,$httpProvider) {
+      function($ionicPlatform, $httpProvider) {
   $ionicPlatform.ready(function() {
   });
 }])
@@ -25,7 +25,7 @@ angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate','monospaced.elas
 
     $stateProvider
     .state('chat', {
-        url: "/:list",
+        url: "/:list/:tv",
         cache: false,
         templateUrl: "templates/chat.html",
         controller: 'ChatController',
@@ -38,15 +38,32 @@ angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate','monospaced.elas
             } else {
               if($stateParams.list){
                 StorageService.setRoom($stateParams.list);
-                $location.path('login');
-
               }
             }
           }]
         }
     })
+    .state('tv', {
+        url: "/:list/:tv",
+        cache: false,
+        templateUrl: "templates/chat.html",
+        controller: 'ChatController',
+        resolve: {
+            userData: ['StorageService', '$location', '$stateParams', function (StorageService, $location, $stateParams) {
+                var user = StorageService.getAuthData();
+
+                if(user.token) {
+                    return user;
+                } else {
+                    if($stateParams.list){
+                        StorageService.setRoom($stateParams.list);
+                    }
+                }
+            }]
+        }
+    })
     .state('login', {
-        url: "/:list/login",
+        url: "/:list/login/:tv",
         cache: false,
         templateUrl: "templates/login.html",
         controller: 'LoginCtrl',
@@ -64,13 +81,12 @@ angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate','monospaced.elas
   return {
     request: function(config) {
       var data = StorageService.getAuthData();
-      //  console.log(data);
-
       config.headers['X-App-Key'] = '1234567890';
       config.headers['Content-Type'] = 'application/x-www-form-urlencoded';
 
       if(data.hasOwnProperty('token')) {
         config.headers['X-Auth-Token'] = data.token;
+        config.headers['X-User-Id'] = data.id;
       }
 
       return config;
@@ -81,12 +97,12 @@ angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate','monospaced.elas
   return {
     responseError: function(response) {
       if (response.status === 401) {
-        $location.path('/login');
-        StorageService.setAuthData('');
-        return $q.reject(response);
-      } else {
-        return $q.reject(response);
-      }
+          $location.path('/login');
+            StorageService.setAuthData('');
+            return $q.reject(response);
+          } else {
+            return $q.reject(response);
+          }
 
       return config;
     }
