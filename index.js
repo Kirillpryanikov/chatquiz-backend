@@ -1,14 +1,12 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
-const bodyParser = require('body-parser');
 const logger = require('morgan');
 const request = require('request');
 const cors = require('cors');
 const rp = require('request-promise');
 const fs = require('fs');
 const socketIO = require('socket.io');
-const stream = require('stream');
 const process = require('process');
 const rfs = require('rotating-file-stream');
 const winston = require('winston');
@@ -102,7 +100,7 @@ io.sockets.on('connection', function (socket) {
                 socket.emit('room', {'owner_id':resp.data.userId,'color':color});
             })
             .catch(function (err) {
-                console.log('resp err');
+                //console.log('resp err');
             });
         socket.join(room.room);
         log_socket.info('user(id|name): '+room.userId + ' '+ room.username +' join to room:'+ room.room);
@@ -117,32 +115,66 @@ io.sockets.on('connection', function (socket) {
                 },
                 json: true
             };
+            rp(options)
+                .then(function () {})
+                .catch(function (err) {
+                    log_errors.error('SOCKET room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | ' +
+                        data.user.firstName + ' | ', err.response.body.message);
+                    msg.errors = err.response.body.message;
+                    socket.emit('message', msg);
+                });
             msg.message = data.message;
             if(data.topic) {
                 msg.topic = data.topic.substring(0, process.env.TOPIC_LENGTH);
-                db.Room.update({room_id: room.room},{topic: msg.topic},{upsert: true}, function (err, res) {
-                    console.log(err);
+                db.Room.update({room_id: room.room}, {topic: msg.topic}, {upsert: false}, function (err) {
                 });
             }
             msg.from = data.user;
             msg.time = new Date();
-
+            db.Message.create({message: data.message, room: room.room, owner_id: data.user.id}, function (err, resp) {
+                msg.id = resp._id;
+                io.sockets.in(room.room).emit('message', msg);
+            });
             log_socket.info('room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '+ data.user.firstName + ' | ' + data.message);
-
-            io.sockets.in(room.room).emit('message', msg);
-
-            rp(options)
-                .then(function () {})
-                .catch(function (err) {
-                    log_errors.error('SOCKET room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '+ data.user.firstName + ' | ', err.response.body.message);
-                    msg.errors = err.response.body.message;
-                    socket.emit('message', msg);
-                });
-
         });
 
         socket.on('writing', data => {
             io.sockets.in(room.room).emit('writing', data);
+        });
+        socket.on('like', data => {
+            if (data.message_id) {
+                db.Message.findOne({_id: data.message_id}, function(err, list) {
+                    if (err) {
+                    console.log('error findOne');
+                    } else {
+                        if(list.likes.length > 0) {
+                            list.likes.find(function (e, i, arr) {
+                                if (e && e.user === data.user_id) {
+                                    list.likes.splice(i, 1);
+                                } else {
+                                    if(!arr[i + 1]) {
+                                        list.likes.push({user:data.user_id});
+                                    }
+                                }
+                            });
+                        } else {
+                            list.likes.push({user: data.user_id});
+                        }
+
+                        list.save(function (err,res) {
+                            if(err) {
+                                console.log('error save:', err);
+                            } else {
+                                io.sockets.in(room.room).emit('like', {
+                                    message_id: data.message_id,
+                                    count: list.likes.length,
+                                    user_id: data.user_id
+                                });
+                            }
+                        });
+                    }
+                });
+            }
         });
 
         socket.on('image', data => {
@@ -179,7 +211,6 @@ io.sockets.on('connection', function (socket) {
                 io.sockets.in(room.room).emit('image', msg);
                 fs.unlinkSync(data.image_name.toString());
                 log_socket.info('Image upload:: room:'+ room.room +' user(id|name|imageUrl): '+data.user.id +' | '+ data.user.firstName +' | '+image.data.imageUrl);
-
     }).catch(e => {
                 let msg = {
                     from: data.user,

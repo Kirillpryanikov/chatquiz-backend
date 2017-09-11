@@ -81,7 +81,6 @@
             } else {
                 $scope.showAlert();
                 $scope.doneLoading = false;
-
             }
         }
     }
@@ -143,7 +142,12 @@
                 //console.log('Thank you for not eating my delicious ice cream cone');
             });
         };
-
+        $scope.like = function (index) {
+            if(!$scope.messages[index].likes) {
+                $scope.messages[index].likes = 0;
+            }
+            msgSocket.emit('like', {message_id: $scope.messages[index].id, user_id: $scope.user.id});
+        };
         var msgSocket = SockService.connect();
         if (!$scope.messages || $scope.messages === undefined) {
             $scope.messages = [];
@@ -178,6 +182,22 @@
             }
             $scope.$apply();
         });
+        //like
+        msgSocket.on('like', function (resp) {
+            if(resp.message_id ) {
+                $scope.messages.find(function (e, i) {
+                    if(e.id === resp.message_id) {
+                        if($scope.messages[i].likes !== resp.count){
+                            $scope.messages[i].likes = resp.count;
+                            if(resp.user_id === $scope.user.id ){
+                                $scope.messages[i].liked = !$scope.messages[i].liked;
+                            }
+                        }
+                    }
+                });
+            }
+            $scope.$apply();
+        });
         //message
         msgSocket.on('message', function (resp) {
             if (resp.from.id === userData.id) {
@@ -192,7 +212,6 @@
             }
             resp.ui = {};
             resp.ui.time = moment().diff(resp.time) > 86400000 ? moment(resp.time).format('DD/MM/YYYY') : moment(resp.time).format('H:mm');
-
             $scope.messages.push(resp);
             $scope.$apply();
             blopFx.play();

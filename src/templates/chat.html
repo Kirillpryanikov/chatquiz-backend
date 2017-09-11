@@ -51,7 +51,11 @@
 
 				<div class="chat-bubble left" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}">
 					<div class="bubble-before" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}"></div>
-
+					<div class="like-wrap" ng-click="like(messages.indexOf(message))">
+						<i class="heart-first icon icon ion-heart"></i>
+						<i class="heart-last icon icon ion-heart" ng-show="!message.liked"></i>
+						<span ng-show="message.likes > 0" ng-bind="message.likes"></span>
+					</div>
 					<img ng-click="photoBrowser(message)" ng-if="message.image" ng-src="{{message.image}}" ng-success="refreshScroll(scrollDown)" />
 
 					<span class="bold">{{message.from.firstName}}</span>
@@ -71,7 +75,11 @@
 
 				<div class="chat-bubble right" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}" >
 					<div class="bubble-before" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}"></div>
-
+					<div class="like-wrap" ng-click="like(messages.indexOf(message))">
+						<i class="heart-first icon icon ion-heart"></i>
+						<i class="heart-last icon icon ion-heart" ng-show="!message.liked"></i>
+						<span ng-show="message.likes > 0" ng-bind="message.likes"></span>
+					</div>
 					<img ng-click="photoBrowser(message)" ng-if="message.image" ng-src="{{message.image}}" ng-success="refreshScroll($last)"/>
 
 					<span class="bold">{{message.from.firstName}}</span>
