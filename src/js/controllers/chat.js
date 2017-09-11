@@ -56,7 +56,7 @@
                         StorageService.setAuthData(resp.data);
                         $scope.doneLoading = false;
                         $rootScope.usr = resp.data;
-                        if ($stateParams.tv == 'tv') {
+                        if ($stateParams.tv === 'tv') {
                             $state.go('tv', {list: $stateParams.list, tv: $stateParams.tv});
                         } else {
                             $state.go('chat', {list: $stateParams.list});

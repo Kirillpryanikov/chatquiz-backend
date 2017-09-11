@@ -16,8 +16,7 @@ module.exports = {
                 if (err) {
                     console.log('Message get_history');
                 }
-                let messages = [];
-                messages = resp.map(function (e) {
+                let messages = resp.map(function (e) {
                     let msg = {
                         message: e.message,
                         msg_id: e._id,
@@ -60,7 +59,7 @@ module.exports = {
             if (data.message_id) {
                 db.Message.findOne({_id: data.message_id}, function (err, list) {
                     if (err) {
-                        console.log('error findOne');
+                        console.log('error setLike');
                     } else {
                         if (list && list.likes.length > 0) {
                             list.likes.find(function (e, i, arr) {
