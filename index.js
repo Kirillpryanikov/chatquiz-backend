@@ -12,7 +12,8 @@ const rfs = require('rotating-file-stream');
 const winston = require('winston');
 const app = express();
 const mongoose = require('mongoose');
-const tools = require('./dbtools.js');
+const tools = require('./dbtools');
+// const tools = require('./dbtools.js');
 
 
 require('dotenv').config({
@@ -78,18 +79,19 @@ app.get('/history/:room/:page', (req, res) => {
         },
         json: true
     };
+
     rp(options)
         .then(function () {
             tools.message.get_history(req.params.room, req.params['x-User-Id'], req.params.page, function (err, resp) {
                 if(resp) {
                     console.log('resp',resp);
-                   res.json(resp);
+                    res.json(resp);
                 }
             });
         })
         .catch(function (err) {
-            log_errors.error('SOCKET room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | ' +
-                data.user.firstName + ' | ', err.response.body.message);
+            log_errors.error('SOCKET room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '
+                + data.user.firstName + ' | ', err.response.body.message);
             msg.errors = err.response.body.message;
             socket.emit('message', msg);
         });
@@ -131,7 +133,8 @@ app.use(function(req, res) {
 });
 
 io.sockets.on('connection', function (socket) {
-    let msg ={};
+    let msg = {};
+
     socket.on('room', function (room) {
         const options = {
             uri: `${url}/list/${room.room}/`,
@@ -142,14 +145,15 @@ io.sockets.on('connection', function (socket) {
             },
             json: true
         };
+
         tools.room.get_topic(room.room, function (err, resp) {
             if(resp) {
                 socket.emit('room', {'topic': resp});
             }
         });
+
         tools.message.get_history(room.room, room.userId, 0, function (err, resp) {
             if(resp) {
-
                 socket.emit('room', {'history': resp});
             }
         });
@@ -161,6 +165,7 @@ io.sockets.on('connection', function (socket) {
             .catch(function (err) {
                 //console.log('resp err',err);
             });
+
         socket.join(room.room);
         log_socket.info('user(id|name): '+room.userId + ' '+ room.username +' join to room:'+ room.room);
 
@@ -174,6 +179,7 @@ io.sockets.on('connection', function (socket) {
                 },
                 json: true
             };
+
             rp(options)
                 .then(function () {})
                 .catch(function (err) {
@@ -182,34 +188,42 @@ io.sockets.on('connection', function (socket) {
                     msg.errors = err.response.body.message;
                     socket.emit('message', msg);
                 });
+
             msg.message = data.message;
-            if(data.topic) {
-                msg.topic = tools.room.set_topic(room.room, data.topic)
+
+            if (data.topic) {
+                tools.room.set_topic(room.room, data.topic).then(resp => msg.topic = resp);
             }
+
             msg.from = data.user;
             msg.time = new Date();
             msg.room = room.room;
+            msg.likes = [];
+
             tools.message.set_message(msg)
                 .then(function (resp) {
                     msg.msg_id = resp._id;
                     io.sockets.in(room.room).emit('message', msg);
                     log_socket.info('room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '+
                         data.user.firstName + ' | ' + data.message);
-                })
-            });
+                });
+        });
 
         socket.on('writing', data => {
             io.sockets.in(room.room).emit('writing', data);
         });
+
         socket.on('like', data => {
             tools.message.set_like(data, function (err, resp) {
                 io.sockets.in(room.room).emit('like', resp);
-            })
+            });
         });
 
         socket.on('image', data => {
             let file = new Buffer(data.image, 'base64');
+
             fs.writeFileSync(data.image_name.toString(), data.image.split(',')[1], 'base64');
+
             let options = {
                 method: 'POST',
                 uri: `${url}/list/${room.room}/chat-image-upload/`,
@@ -228,25 +242,31 @@ io.sockets.on('connection', function (socket) {
                 }
             };
 
-            rp(options).then(response => {
+            rp(options)
+                .then(response => {
 
-            let image = JSON.parse(response);
+                    let image = JSON.parse(response);
                     let msg = {
                         message: data.message,
                         image: image.data.imageUrl,
                         from: data.user,
                         time: new Date(),
-                        room: room.room
+                        room: room.room,
+                        likes: []
                     };
-                tools.message.set_message(msg)
-                    .then(function (resp) {
-                        msg.msg_id = resp;
-                        io.sockets.in(room.room).emit('image', msg);
-                    });
+                
+                    tools.message.set_message(msg)
+                        .then(function (resp) {
+                            msg.msg_id = resp;
+                            io.sockets.in(room.room).emit('image', msg);
+                        });
+
                     fs.unlinkSync(data.image_name.toString());
-                    log_socket.info('Image upload:: room:'+ room.room +' user(id|name|imageUrl): '+data.user.id +' | '
-                        + data.user.firstName +' | '+image.data.imageUrl);
-            }).catch(e => {
+                    log_socket.info('Image upload:: room:'+ room.room +' user(id|name|imageUrl): '
+                        + data.user.id + ' | ' + data.user.firstName +' | '+image.data.imageUrl);
+
+                })
+                .catch(e => {
                     let msg = {
                         from: data.user,
                         errors: JSON.parse(e.response.body),
@@ -255,20 +275,12 @@ io.sockets.on('connection', function (socket) {
                     io.sockets.in(room.room).emit('image', msg);
                     fs.unlinkSync(data.image_name.toString());
                     log_errors.error('SOCKET room:'+ room.room +' errors: ',msg.errors);
-            });
+                });
         });
 
-        socket.on('disconnect', function (room) {
-            socket.leave(room.room);
-        });
+        socket.on('disconnect', room => socket.leave(room.room));
     });
 
-});
-mongoose.connect(process.env.DATABASE_URL, function (err) {
-    if(err){
-        console.log('Mongo Connect Error: ', err);
-    }
-    console.log('Mongo connected');
 });
 
 server.listen(port, () => {
