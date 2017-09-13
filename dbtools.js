@@ -10,6 +10,7 @@ const Datastore = require('nedb-promises');
 // If the file does not exist,it will be created automatically (bases on promises)
 let rooms    = new Datastore({ filename: './databases/rooms.db', autoload: true}) ,
     messages = new Datastore({ filename: './databases/messages.db', autoload: true});
+const HISTORY_MAX_SIZE = parseInt(process.env.HISTORY_MAX_SIZE);
 
 module.exports = {
     message: {
@@ -35,10 +36,11 @@ module.exports = {
                     };
 
                     el.likes.find( like => {
-                        if (el.user === user_id) {
+                        if (like.user === user_id) {
                             msg.liked = true;
                         }
                     });
+
 
                     return msg;
                 });
@@ -59,6 +61,19 @@ module.exports = {
         },
         set_message: async (data) => {
             try {
+                let idsmsg = await messages.find({});
+                if (idsmsg.length >= HISTORY_MAX_SIZE) {
+                    let countOfIndex = idsmsg.length - HISTORY_MAX_SIZE;
+                    let ids = [];
+                    for (let i=0; i < countOfIndex; i++) {
+                        if(idsmsg[i] && idsmsg[i]._id) {
+                            ids[i] = idsmsg[i]._id;
+                        }
+                    }
+                    ids.forEach(async (mes) => {
+                       await messages.remove({'_id': mes});
+                    });
+                }
                 let message = await messages.insert(data);
                 return message._id;
             } catch (e) {
@@ -73,7 +88,7 @@ module.exports = {
                     let message = await messages.findOne({_id: data.message_id});
 
                     if (message && message.likes.length > 0) {
-                        message.likes.find( (el, i, array) => {
+                        message.likes.find( (e, i, array) => {
                             if (e && e.user === data.user_id) {
                                 message.likes.splice(i, 1);
                             } else {
