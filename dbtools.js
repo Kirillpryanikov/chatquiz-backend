@@ -4,13 +4,13 @@ const path = require('path');
 require('dotenv').config({
     path: path.resolve('.env')
 });
+const HISTORY_MAX_SIZE = parseInt(process.env.HISTORY_MAX_SIZE);
 const Datastore = require('nedb-promises');
 
 // Connection to collections
 // If the file does not exist,it will be created automatically (bases on promises)
 let rooms    = new Datastore({ filename: './databases/rooms.db', autoload: true}) ,
     messages = new Datastore({ filename: './databases/messages.db', autoload: true});
-const HISTORY_MAX_SIZE = parseInt(process.env.HISTORY_MAX_SIZE);
 
 module.exports = {
     message: {
@@ -23,7 +23,7 @@ module.exports = {
                 let records = await messages.find({room: room})
                     .skip(parseInt(page) * parseInt(process.env.HISTORY_LIMIT))
                     .limit(parseInt(process.env.HISTORY_LIMIT))
-                    .sort({_id: -1});
+                    .sort({ time: -1, _id: -1});
 
                 let msgs = records.map( el => {
                     let msg = {
@@ -61,20 +61,18 @@ module.exports = {
         },
         set_message: async (data) => {
             try {
-                let idsmsg = await messages.find({});
-                if (idsmsg.length >= HISTORY_MAX_SIZE) {
-                    let countOfIndex = idsmsg.length - HISTORY_MAX_SIZE;
-                    let ids = [];
-                    for (let i=0; i < countOfIndex; i++) {
-                        if(idsmsg[i] && idsmsg[i]._id) {
-                            ids[i] = idsmsg[i]._id;
-                        }
+                let countOfMsg = await messages.count({ 'room': data.room });
+
+                if (countOfMsg > HISTORY_MAX_SIZE) {
+                    let difference = Math.abs(countOfMsg - HISTORY_MAX_SIZE);
+                    let all_msgs = await messages.find({ 'room': data.room }).sort({time: 1, _id: -1}).limit(difference);
+
+                    for (let i = 0; i < all_msgs.length; i++) {
+                        await messages.remove({'_id': all_msgs[i]._id});
                     }
-                    ids.forEach(async (mes) => {
-                       await messages.remove({'_id': mes});
-                    });
                 }
                 let message = await messages.insert(data);
+
                 return message._id;
             } catch (e) {
                 console.log('Message set_message: ', e);

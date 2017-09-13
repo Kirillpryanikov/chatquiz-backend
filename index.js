@@ -84,7 +84,6 @@ app.get('/history/:room/:page', (req, res) => {
         .then(function () {
             tools.message.get_history(req.params.room, req.params['x-User-Id'], req.params.page, function (err, resp) {
                 if(resp) {
-                    console.log('resp',resp);
                     res.json(resp);
                 }
             });
