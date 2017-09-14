@@ -12,7 +12,7 @@ const rfs = require('rotating-file-stream');
 const winston = require('winston');
 const app = express();
 const mongoose = require('mongoose');
-const tools = require('./dbtools');
+const tools = require('./dbtools-compiled');
 // const tools = require('./dbtools.js');
 
 
