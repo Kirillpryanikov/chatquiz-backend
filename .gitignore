@@ -7,3 +7,5 @@
 .env
 
 /databases/
+
+dbtools-compiled.js
