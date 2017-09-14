@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "babel dbtools.es6 -o dbtools-compiled.js && nodemon index.js", 
+    "dev": "babel dbtools.es6 -o dbtools-compiled.js", 
     "start:pm2:prod": "npm run dev && pm2 start pm2.config.json --env production",
     "start:pm2:stage": "npm run dev && pm2 start pm2.config.json --env staging",
     "start:pm2:dev": "npm run dev && pm2 start pm2.config.json --env development",
