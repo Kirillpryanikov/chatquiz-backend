@@ -124,6 +124,11 @@ module.exports = {
         get_topic: async (room, cb) => {
             try {
                 let topic = await rooms.findOne({ room_id: room });
+
+                if (!topic) {
+                    topic = await rooms.insert({ room_id: room, topic: '' })
+                }
+                // {"topic":"123123","room_id":"59479ceaff9822d4288b45a1","_id":"Lhi64ksYcoAs5ty1"}
                 cb(null, topic.topic);
             } catch (e) {
                 console.log('Err: ', e);
