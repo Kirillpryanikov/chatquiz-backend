@@ -1,117 +1,143 @@
 'use strict';
 
-const db = require('./config/db/models');
 const path = require('path');
 require('dotenv').config({
     path: path.resolve('.env')
 });
+const HISTORY_MAX_SIZE = parseInt(process.env.HISTORY_MAX_SIZE);
+const Datastore = require('nedb-promises');
+
+// Connection to collections
+// If the file does not exist,it will be created automatically (bases on promises)
+let rooms    = new Datastore({ filename: './databases/rooms.db', autoload: true}) ,
+    messages = new Datastore({ filename: './databases/messages.db', autoload: true});
 
 module.exports = {
     message: {
-        get_history: function (room, user_id, page, cb) {
+        get_history: async (room, user_id, page, cb) => {
             if (!page) {
                 page = 0;
             }
-            db.Message.find({room: room}, function (err, resp) {
-                if (err) {
-                    console.log('Message get_history');
-                }
-                let messages = resp.map(function (e) {
+
+            try {               
+                let records = await messages.find({room: room})
+                    .skip(parseInt(page) * parseInt(process.env.HISTORY_LIMIT))
+                    .limit(parseInt(process.env.HISTORY_LIMIT))
+                    .sort({ time: -1, _id: -1});
+
+                let msgs = records.map( el => {
                     let msg = {
-                        message: e.message,
-                        msg_id: e._id,
-                        likes: e.likes.length,
-                        time: e.time,
-                        from: e.from,
-                        image: e.image
+                        message: el.message,
+                        msg_id: el._id,
+                        likes: el.likes.length,
+                        time: el.time,
+                        from: el.from,
+                        image: el.image
                     };
-                    e.likes.find(function (el) {
-                        if (el.user === user_id) {
+
+                    el.likes.find( like => {
+                        if (like.user === user_id) {
                             msg.liked = true;
                         }
                     });
+
+
                     return msg;
                 });
-                cb(null, messages.reverse());
-            }).skip(parseInt(page) * parseInt(process.env.HISTORY_LIMIT))
-                .limit(parseInt(process.env.HISTORY_LIMIT))
-                .sort({_id: -1});
-        },
-        download_history: function (cb) {
-            db.Message.find(function (err, resp) {
-                if (err) {
-                    console.log('Download history error');
-                } else {
-                    cb(null, resp);
-                }
-            });
-        },
-        set_message: function (data) {
-            return db.Message.create(data, function (err, resp) {
-                if (err) {
-                    console.log('Message set_message', err);
-                } else {
-                    return resp._id;
-                }
-            });
-        },
-        set_like: function (data, cb) {
-            if (data.message_id) {
-                db.Message.findOne({_id: data.message_id}, function (err, list) {
-                    if (err) {
-                        console.log('error setLike');
-                    } else {
-                        if (list && list.likes.length > 0) {
-                            list.likes.find(function (e, i, arr) {
-                                if (e && e.user === data.user_id) {
-                                    list.likes.splice(i, 1);
-                                } else {
-                                    if (!arr[i + 1]) {
-                                        list.likes.push({user: data.user_id});
-                                    }
-                                }
-                            });
-                        } else {
-                            list.likes.push({user: data.user_id});
-                        }
 
-                        list.save(function (err) {
-                            if (err) {
-                                console.log('error save:', err);
+                cb(null, msgs.reverse());
+
+            } catch (e) {
+                console.log('Message get_history: ', e);
+            }
+        },
+        download_history: async (cb) => {
+            try {
+                let response = await messages.find({});
+                cb(null, response);
+            } catch (e) {
+                console.log('Download history error: ', e);
+            }
+        },
+        set_message: async (data) => {
+            try {
+                let countOfMsg = await messages.count({ 'room': data.room });
+
+                if (countOfMsg > HISTORY_MAX_SIZE) {
+                    let difference = Math.abs(countOfMsg - HISTORY_MAX_SIZE);
+                    let all_msgs = await messages.find({ 'room': data.room }).sort({time: 1, _id: -1}).limit(difference);
+
+                    for (let i = 0; i < all_msgs.length; i++) {
+                        await messages.remove({'_id': all_msgs[i]._id});
+                    }
+                }
+                let message = await messages.insert(data);
+
+                return message._id;
+            } catch (e) {
+                console.log('Message set_message: ', e);
+                return;
+            }
+        },
+        set_like: async (data, cb) => {
+            console.log('set like');
+            if (data.message_id) {
+                try {
+                    let message = await messages.findOne({_id: data.message_id});
+
+                    if (message && message.likes.length > 0) {
+                        message.likes.find( (e, i, array) => {
+                            if (e && e.user === data.user_id) {
+                                message.likes.splice(i, 1);
                             } else {
-                                let result = {
-                                    message_id: data.message_id,
-                                    count: list.likes.length,
-                                    user_id: data.user_id
-                                };
-                                cb(null, result);
+                                if (!arr[i + 1]) {
+                                    message.likes.push({ user: data.user_id });
+                                }
                             }
                         });
+                    } else {
+                        message.likes.push({ user: data.user_id });
                     }
-                });
+
+                    try {
+                        await messages.update({_id: data.message_id}, message);
+                        let result = {
+                            message_id: data.message_id,
+                            count: message.likes.length,
+                            user_id: data.user_id
+                        };
+                        cb(null, result);
+                    } catch (e) {
+                        console.log('error save: ', e);
+                        return;
+                    }
+
+                }
+                catch (e) {
+                    console.log('error setLike');
+                }
             }
         }
     },
     room: {
-        get_topic: function (room, cb) {
-            db.Room.findOne({room_id: room}, function (err, topic) {
-                if (err) {
-                    console.log('Mongo Update Err: ', err);
-                    return false;
-                }
-                if (topic && topic.topic) {
-                    cb(null, topic.topic);
-                }
-            });
+        get_topic: async (room, cb) => {
+            try {
+                let topic = await rooms.findOne({ room_id: room });
+                cb(null, topic.topic);
+            } catch (e) {
+                console.log('Err: ', e);
+                return false;
+            }
         },
-        set_topic: function (room, topic) {
-            let resp = topic.substring(0, process.env.TOPIC_LENGTH);
-            db.Room.update({room_id: room}, {topic: topic}, {upsert: false}, function (err) {
-                if (err) {
-                    console.log('Room update false', err);
-                }
-                return resp;
-            });
+        set_topic: async (room, topic) => {
+            try {
+                const _topic = topic.substring(0, process.env.TOPIC_LENGTH);
+                await rooms.update({ room_id: room }, { topic: topic, room_id: room }, { upsert: true });
+                return _topic;
+            } catch (e) {
+                console.log('Room update false: ', e);
+                return;
+            }
         }
     }
 }
