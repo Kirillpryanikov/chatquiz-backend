@@ -12,22 +12,20 @@
 ```gulp```
 
 ```create and config file .env like env.example```
-
-```Create a .env file like env.example```
 ------
 
 
 
 For local developing server
 
-```pm2 start pm2.config.json```
+```npm run start:pm2:dev```
 
 For staging:
 
-```pm2 start pm2.config.json --env staging```
+```npm run start:pm2:stage```
 
 For production:
 
-```pm2 start pm2.config.json --env production```
+```npm run start:pm2:prod```
 
 Environments variables are set using PM2. For updating variables values while server is running use: ```--update-env```
