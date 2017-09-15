@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "babel dbtools.es6 -o dbtools-compiled.js", 
+    "dev": "babel dbtools.es6 -o dbtools-compiled.js",
     "start:pm2:prod": "npm run dev && pm2 start pm2.config.json --env production",
     "start:pm2:stage": "npm run dev && pm2 start pm2.config.json --env staging",
     "start:pm2:dev": "npm run dev && pm2 start pm2.config.json --env development",
@@ -21,6 +21,7 @@
     "colors": "^1.1.2",
     "cors": "^2.8.3",
     "cycle": "^1.0.3",
+    "dateformat": "^2.0.0",
     "debug": "^3.0.0",
     "dotenv": "^4.0.0",
     "express": "^4.15.3",
