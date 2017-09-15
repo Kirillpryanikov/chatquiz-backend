@@ -203,7 +203,7 @@ io.sockets.on('connection', function (socket) {
 
             tools.message.set_message(msg)
                 .then(function (resp) {
-                    msg.msg_id = resp._id;
+                    msg.msg_id = resp;
                     msg.time = dateformat(msg.time, "HH:MM");
                     io.sockets.in(room.room).emit('message', msg);
                     log_socket.info('room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '+
