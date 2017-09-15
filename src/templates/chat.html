@@ -2,7 +2,7 @@
 	<!--modal image upload-->
 	<div class="topic" ng-show="topic_title || owner.owner_id === user.id">
 		<div class="topic__inner">
-			<div class="topic__title">
+			<div class="topic__title" ng-click="owner.owner_id ? editTopic() : null">
 				<span ng-show="!topic_edit " ng-bind="topic_title"></span>
 				<input type="text" class="topic__edit-field" ng-model="topic_title" ng-show="owner.owner_id && topic_edit">
 			</div>
