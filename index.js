@@ -12,6 +12,7 @@ const rfs = require('rotating-file-stream');
 const winston = require('winston');
 const app = express();
 const mongoose = require('mongoose');
+const dateformat = require('dateformat');
 const tools = require('./dbtools-compiled');
 // const tools = require('./dbtools.js');
 
@@ -162,6 +163,7 @@ io.sockets.on('connection', function (socket) {
                 socket.emit('room', {'owner_id':resp.data.userId,'color':color});
             })
             .catch(function (err) {
+
                 //console.log('resp err',err);
             });
 
@@ -202,6 +204,8 @@ io.sockets.on('connection', function (socket) {
             tools.message.set_message(msg)
                 .then(function (resp) {
                     msg.msg_id = resp._id;
+                    // msg.time = msg.time.getHours() + ':' + msg.time.getMinutes();
+                    msg.time = dateformat(msg.time, "HH:MM");
                     io.sockets.in(room.room).emit('message', msg);
                     log_socket.info('room:'+ room.room +' user(id|name|message): '+ data.user.id + ' | '+
                         data.user.firstName + ' | ' + data.message);

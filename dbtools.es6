@@ -2,6 +2,7 @@
 
 require("babel-polyfill");
 const path = require('path');
+const dateformat = require('dateformat');
 require('dotenv').config({
     path: path.resolve('.env')
 });
@@ -20,7 +21,7 @@ module.exports = {
                 page = 0;
             }
 
-            try {               
+            try {     
                 let records = await messages.find({room: room})
                     .skip(parseInt(page) * parseInt(process.env.HISTORY_LIMIT))
                     .limit(parseInt(process.env.HISTORY_LIMIT))
@@ -31,7 +32,7 @@ module.exports = {
                         message: el.message,
                         msg_id: el._id,
                         likes: el.likes.length,
-                        time: el.time,
+                        time: dateformat(new Date(el.time), "HH:MM"),
                         from: el.from,
                         image: el.image
                     };
@@ -81,7 +82,7 @@ module.exports = {
             }
         },
         set_like: async (data, cb) => {
-            console.log('set like');
+
             if (data.message_id) {
                 try {
                     let message = await messages.findOne({_id: data.message_id});
@@ -91,7 +92,7 @@ module.exports = {
                             if (e && e.user === data.user_id) {
                                 message.likes.splice(i, 1);
                             } else {
-                                if (!arr[i + 1]) {
+                                if (!array[i + 1]) {
                                     message.likes.push({ user: data.user_id });
                                 }
                             }
@@ -115,7 +116,7 @@ module.exports = {
 
                 }
                 catch (e) {
-                    console.log('error setLike');
+                    console.log('error setLike: ', e);
                 }
             }
         }
@@ -128,7 +129,6 @@ module.exports = {
                 if (!topic) {
                     topic = await rooms.insert({ room_id: room, topic: '' })
                 }
-                // {"topic":"123123","room_id":"59479ceaff9822d4288b45a1","_id":"Lhi64ksYcoAs5ty1"}
                 cb(null, topic.topic);
             } catch (e) {
                 console.log('Err: ', e);
