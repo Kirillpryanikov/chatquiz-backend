@@ -106,6 +106,7 @@ $tvlineh: 35px;
 
   .message-wrapper {
     position: relative;
+    margin: 10px 0;
   }
 
   .message-wrapper:last-child {
@@ -370,10 +371,12 @@ $tvlineh: 35px;
   }
   &__inner {
     display: flex;
+    align-items: center;
     justify-content: center;
-    background-color: yellowgreen;
+    background-color: #1bbc9b;
     padding: 10px 15px;
     border-radius: 12px;
+    z-index: 20;
   }
   &__edit {
     cursor: pointer;
@@ -382,8 +385,6 @@ $tvlineh: 35px;
     cursor: pointer;
     font-size: 16px;
     margin-left: 5px;
-    width: 10px;
-    height: 10px;
     z-index: 99;
     input {
       z-index: 99;
