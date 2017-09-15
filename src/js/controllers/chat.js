@@ -356,6 +356,8 @@
                     var file = e.files[0];
                     var reader = new FileReader();
                     reader.onload = function (evt) {
+                        console.log(evt.target);
+                        console.log(file);                        
                         $scope.msg = $scope.img_review = {};
                         $scope.img_review.image = evt.target.result;
                         $scope.msg.image = evt.target.result;
