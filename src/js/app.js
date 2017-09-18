@@ -72,9 +72,14 @@ angular.module('App', ['ionic', 'btford.socket-io', 'ngAnimate','monospaced.elas
             return StorageService.getAuthData()
           }]
         }
+    })
+    .state('error_page', {
+      url: "/404",
+      cache: false,
+      templateUrl: "templates/404.html"
     });
 
-    $urlRouterProvider.otherwise('chat');
+    $urlRouterProvider.otherwise('404');
 }])
 
 .factory('AuthInterceptor', function(StorageService,$q,$location) {
