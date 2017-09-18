@@ -164,8 +164,9 @@ io.sockets.on('connection', function (socket) {
                 socket.emit('room', {'owner_id':resp.data.userId,'color':color, 'text_color': text_color});
             })
             .catch(function (err) {
-
-                //console.log('resp err',err);
+                log_errors.error('SOCKET room:'+ room.room + ', error: ' + err.response.body.message);
+                msg.errors = err.response.body.message;
+                socket.emit('message', msg);
             });
 
         socket.join(room.room);
