@@ -3,7 +3,7 @@
 
     angular
         .module('App')
-        .factory('ChatService',['$http', '$q','$window','$state','BaseURL', ChatService])
+        .factory('ChatService',['$http', '$q','$window','$state','BaseURL', '$rootScope', ChatService])
         .factory('StorageService', ['$window', StorageService])
         .factory('SockService', ['StorageService','$http', '$q','$window','$state','BaseURL', '$rootScope', SockService]);
 
@@ -15,7 +15,7 @@
           var user = StorageService.getAuthData();
             me.connect = function () {
               if($rootScope.sock) {
-                $rootScope.sock.disconnect();
+                !$rootScope.sock.connected && $rootScope.sock.disconnect();
               }
            $rootScope.sock = io.connect(apiUrl,{transports: ['websocket']});
               return $rootScope.sock;
@@ -39,13 +39,13 @@
           return me;
         };
 
-    function ChatService($http, $q,$window,$state,BaseURL) {
+    function ChatService($http, $q,$window,$state,BaseURL, $rootScope) {
         var me = {};
         var apiUrl = BaseURL;
 
         me.logOut = function (_list, _tv) {
           $window.localStorage['_user'] = false;
-          $state.go('login', { list: _list, tv: _tv });
+          $state.go('login', { list: _list, tv: _tv, stateOut: true });
         };
 
         me.login = function(data){

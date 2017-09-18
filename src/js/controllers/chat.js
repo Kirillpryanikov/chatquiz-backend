@@ -6,7 +6,7 @@
         .controller('MainCtrl', MainCtrl)
         .controller('LoginCtrl', LoginCtrl)
         .controller('ChatController', ChatController);
-         MainCtrl.$inject = ['$scope', '$rootScope', '$state',
+        MainCtrl.$inject = ['$scope', '$rootScope', '$state',
         '$stateParams', 'ChatService', 'StorageService',
         '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
         '$ionicActionSheet', '$filter', '$ionicModal', '$q', '$location'];
@@ -28,6 +28,10 @@
 
     function LoginCtrl($scope, $rootScope, $state, $stateParams, ChatService, StorageService, $translate,
                        $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal) {
+
+        if ($stateParams.stateOut){
+            msgSocket.emit('logout');
+        }    
 
         $scope.data = {};
         $scope.showAlert = function () {

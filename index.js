@@ -220,7 +220,7 @@ io.sockets.on('connection', function (socket) {
                 io.sockets.in(room.room).emit('like', resp);
             });
         });
-
+        socket.on('logout', room => socket.leave(room.room));
         socket.on('image', data => {
             let file = new Buffer(data.image, 'base64');
 
