@@ -123,7 +123,8 @@
                     imageUrl: userData.imageUrl,
                     token: userData.token,
                     owner_id: $scope.owner.owner_id,
-                    owner_color: $scope.owner.color
+                    owner_color: $scope.owner.color,
+                    owner_text_color: $scope.owner.text_color
                 },
                 topic: $scope.topic_title
             };
@@ -372,7 +373,8 @@
                             id: userData.id,
                             imageUrl: userData.imageUrl,
                             owner_id: $scope.owner.owner_id,
-                            owner_color: $scope.owner.color
+                            owner_color: $scope.owner.color,
+                            owner_text_color: $scope.owner.text_color
                         }
                         $scope.$apply();
 
@@ -403,7 +405,8 @@
                     imageUrl: userData.imageUrl,
                     token: userData.token,
                     owner_id: $scope.owner.owner_id,
-                    owner_color: $scope.owner.color
+                    owner_color: $scope.owner.color,
+                    owner_text_color: $scope.owner.text_color
                 }
             };
 

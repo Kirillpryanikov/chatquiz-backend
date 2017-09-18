@@ -63,11 +63,10 @@
 					</div>
 					<img ng-click="photoBrowser(message)" ng-if="message.image" ng-src="{{message.image}}" ng-success="refreshScroll(scrollDown)" />
 
-					<span class="bold">{{message.from.firstName}}</span>
-					<div ng-if="!message.imageUrl" class="message" ng-bind-html="message.message | nl2br" autolinker>
-					</div>
+					<span class="bold" ng-style="message.from.owner_id === message.from.id && {'color': message.from.owner_text_color}">{{message.from.firstName}}</span>
+					<div ng-if="!message.imageUrl" class="message" ng-bind-html="message.message | nl2br" ng-style="message.from.owner_id === message.from.id && {'color': message.from.owner_text_color}" autolinker></div>
 
-					<div class="message-detail">
+					<div class="message-detail" ng-style="message.from.owner_id === message.from.id && {'color': message.from.owner_text_color}">
 						<span>{{ message.time }}</span>
 					</div>
 

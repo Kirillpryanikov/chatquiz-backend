@@ -25,6 +25,7 @@ const port = process.env.PORT || 8080;
 const url = process.env.APIURL;
 const app_key = process.env.APPKEY;
 const color = process.env.COLOR;
+const text_color = process.env.TEXT_COLOR;
 const server = http.createServer(app);
 const io = socketIO(server);
 process.title = "chatMicroS";
@@ -160,7 +161,7 @@ io.sockets.on('connection', function (socket) {
 
         rp(options)
             .then(function (resp) {
-                socket.emit('room', {'owner_id':resp.data.userId,'color':color});
+                socket.emit('room', {'owner_id':resp.data.userId,'color':color, 'text_color': text_color});
             })
             .catch(function (err) {
 
