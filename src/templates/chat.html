@@ -1,15 +1,15 @@
-<ion-view class="homeView" cache-view="false" hide-back-button="true" view-title="{{'APP_TITLE' | translate}}">
+<ion-view class="homeView" cache-view="false" hide-back-button="true" view-title="{{'APP_TITLE' | translate}}" >
 	<!--modal image upload-->
 	<div class="topic" ng-show="topic_title || owner.owner_id === user.id">
 		<div class="topic__inner">
-			<div class="topic__title" ng-click="owner.owner_id ? editTopic() : null">
+			<div class="topic__title" ng-click="owner.owner_id === user.id ? editTopic() : null">
 				<span ng-show="!topic_edit " ng-bind="topic_title"></span>
-				<input type="text" class="topic__edit-field" ng-model="topic_title" ng-show="owner.owner_id && topic_edit">
+				<input type="text" class="topic__edit-field" id="topic-edit" ng-model="topic_title" ng-show="owner.owner_id === user.id && topic_edit" spellcheck="false">
 			</div>
-			<div class="topic__edit" ng-click="editTopic()" ng-if="owner.owner_id && !topic_edit">
+			<div class="topic__edit" ng-click="editTopic()" ng-if="owner.owner_id === user.id && !topic_edit">
 				<i class = "icon icon ion-compose" ></i>
 			</div>
-			<div class="topic__edit" ng-click="saveTopic(topic_title)" ng-if="owner.owner_id && topic_edit">
+			<div class="topic__edit" ng-click="saveTopic(topic_title)" ng-if="owner.owner_id === user.id && topic_edit">
 				<i class = "icon icon ion-checkmark-circled" style="font-size: 22px;"></i>
 			</div>
 		</div>
@@ -36,98 +36,88 @@
 			</div>
 		</div>
 	</div>
+
 	<div class="loader-center" ng-if="!doneLoading">
 		<div class="loader">
 			<i class="icon ion-load-c"></i>
 		</div>
 	</div>
-	<ion-content overflow-scroll="false" has-bouncing="true" ng-class="{'tv': tv}" class="has-header has-footer" delegate-handle="userMessageScroll"
-		on-scroll="checkScroll()">
-		<ion-refresher
+
+	<ion-content
+		lazy-scroll 
+		remember-scroll="false" 
+		ng-click="topic_edit && saveTopic(topic_title)" 
+		overflow-scroll="false" 
+		has-bouncing="device_mobile" 
+		ng-class="{'tv': tv}" 
+		class="has-footer" 
+		delegate-handle="userMessageScroll"
+		on-scroll="checkScroll()"
+		>
+
+		<ion-refresher ng-if="device_mobile"
 				pulling-text="loading ... "
 				on-refresh="loadMore()">
 		</ion-refresher>
 
-		<div ng-repeat="message in messages track by $index" class="message-wrapper animated fadeInUp" ng-init="$last && refreshScroll(user.id === message.from.id)" ng-if="!message.errors">
-
-			<div ng-if="user.id !== message.from.id">
-
-				<img ng-click="viewProfile(message)" class="profile-pic left" ng-src="{{message.from.imageUrl}}thumb/" onerror="onProfilePicError(this)" />
-
-				<div class="chat-bubble left" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}">
-					<div class="bubble-before" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}"></div>
-					<div class="like-wrap" ng-click="like(messages.indexOf(message))">
-						<i class="heart-first icon icon ion-heart"></i>
-						<i class="heart-last icon icon ion-heart" ng-show="!message.liked"></i>
-						<span ng-show="message.likes > 0" ng-bind="message.likes"></span>
+		<ion-list style='margin-top:50px;'>
+			<ion-item ng-repeat="message in messages track by $index" class="message-wrapper" ng-init="$last && refreshScroll(user.id === message.from.id)" ng-if="!message.errors">
+				<div ng-if="user.id !== message.from.id">
+					<img ng-click="viewProfile(message)" class="profile-pic left" ng-src="{{message.from.imageUrl}}thumb/" onerror="onProfilePicError(this)" />
+					<div class="chat-bubble left" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}">
+						<div class="bubble-before" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}"></div>
+						<div class="like-wrap" ng-click="like(messages.indexOf(message))">
+							<i class="heart-first icon icon ion-heart"></i>
+							<i class="heart-last icon icon ion-heart" ng-show="!message.liked"></i>
+							<span ng-show="message.likes > 0" ng-bind="message.likes"></span>
+						</div>
+						<img image-lazy-src="{{message.image}}" image-lazy-loader="spiral" ng-click="photoBrowser(message)" ng-if="message.image" ng-success="refreshScroll($scrollDown)"/>
+						<span class="bold" ng-style="message.from.owner_id === message.from.id && {'color': message.from.owner_text_color}">{{message.from.firstName}}</span>
+						<div ng-if="!message.imageUrl" class="message" ng-bind-html="message.message | nl2br" ng-style="message.from.owner_id === message.from.id && {'color': message.from.owner_text_color}" autolinker></div>
+						<div class="message-detail" ng-style="message.from.owner_id === message.from.id && {'color': message.from.owner_text_color}"><span>{{ message.time }}</span></div>
 					</div>
-					<img ng-click="photoBrowser(message)" ng-if="message.image" ng-src="{{message.image}}" ng-success="refreshScroll(scrollDown)" />
-
-					<span class="bold" ng-style="message.from.owner_id === message.from.id && {'color': message.from.owner_text_color}">{{message.from.firstName}}</span>
-					<div ng-if="!message.imageUrl" class="message" ng-bind-html="message.message | nl2br" ng-style="message.from.owner_id === message.from.id && {'color': message.from.owner_text_color}" autolinker></div>
-
-					<div class="message-detail" ng-style="message.from.owner_id === message.from.id && {'color': message.from.owner_text_color}">
-						<span>{{ message.time }}</span>
-					</div>
-
-				</div>
-			</div>
-
-			<div ng-if="user.id === message.from.id" ng-class="message.image ? 'whith-image':''">
-
-				<img class="profile-pic right" ng-src="{{message.from.imageUrl}}thumb/" onerror="onProfilePicError(this)" />
-
-				<div class="chat-bubble right" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}" >
-					<div class="bubble-before" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}"></div>
-					<div class="like-wrap" ng-click="like(messages.indexOf(message))">
-						<i class="heart-first icon icon ion-heart"></i>
-						<i class="heart-last icon icon ion-heart" ng-show="!message.liked"></i>
-						<span ng-show="message.likes > 0" ng-bind="message.likes"></span>
-					</div>
-					<img ng-click="photoBrowser(message)" ng-if="message.image" ng-src="{{message.image}}" ng-success="refreshScroll($last)"/>
-
-					<span class="bold">{{message.from.firstName}}</span>
-					<div ng-if="!message.imageUrl" class="message" ng-bind-html="message.message | nl2br" autolinker></div>
-
-					<div class="message-detail">
-						<span>{{ message.time }}</span>
-					</div>
-
 				</div>
 
-			</div>
+				<div ng-if="user.id === message.from.id" ng-class="message.image ? 'whith-image':''">
+					<img class="profile-pic right" ng-src="{{message.from.imageUrl}}thumb/" onerror="onProfilePicError(this)" />
+					<div class="chat-bubble right" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}" >
+						<div class="bubble-before" ng-style="message.from.owner_id === message.from.id && {'background-color':message.from.owner_color}"></div>
+						<div class="like-wrap" ng-click="like(messages.indexOf(message))">
+							<i class="heart-first icon icon ion-heart"></i>
+							<i class="heart-last icon icon ion-heart" ng-show="!message.liked"></i>
+							<span ng-show="message.likes > 0" ng-bind="message.likes"></span>
+						</div>
+						<img image-lazy-src="{{message.image}}" image-lazy-loader="spiral" ng-click="photoBrowser(message)" ng-if="message.image" ng-success="refreshScroll($scrollDown)"/>
+						<span class="bold">{{message.from.firstName}}</span>
+						<div ng-if="!message.imageUrl" class="message" ng-bind-html="message.message | nl2br" autolinker></div>
+						<div class="message-detail" ng-style="message.from.owner_id === message.from.id && {'color': message.from.owner_text_color}"><span>{{ message.time }}</span></div>
+					</div>
+				</div>
 
-			<div class="cf"></div>
-
-		</div>
-
-
+				<div class="cf"></div>
+			</ion-item>
+		</ion-list>
 	</ion-content>
 
 	<!-- <form name="sendMessageForm" ng-submit="sendMessage(sendMessageForm)" novalidate> -->
-		<ion-footer-bar class="bar-stable item-input-inset message-footer animated fadeInUp" keyboard-attach  ng-show="!tv" ng-show="!img_review">
+	<ion-footer-bar class="bar-stable item-input-inset message-footer animated fadeInUp" keyboard-attach  ng-show="!tv" ng-show="!img_review">
 
-			<div class="writing-now animated fadeInRight" ng-if="writingNow.length > 0">
-				<p><span ng-repeat="user in writingNow track by $index">{{user.firstName}}, </span>{{'IS_WRITING_NOW' | translate}}</p>
-			</div>
-			<!-- <label class="item-input-wrapper"> -->
-				<textarea ng-model="input.message" ng-change="writing()" placeholder="{{'WRITE_A_MESSAGE' | translate}}"
-				ng-keyup="$event.keyCode == 13 && sendMessage(input.message)" required minlength="1" maxlength="1500" msd-elastic></textarea>
-			<!-- </label> -->
-			<div class="footer-btn-wrap">
-				<button for="upload_input" class="button button-icon icon ion-images button-dark button-clear photo" type="button" ng-if="!input.message || input.message === ''"
-					on-tap="sendPhoto()" id="sendphoto">
-					<input type="file" id="upload_input" name="upload" accept="image/*"
-					 onchange="angular.element(this).scope().sendPhoto(this)" ng-model="fileinput" />
-        </button>
+		<div class="writing-now animated fadeInRight" ng-if="writingNow.length > 0">
+			<p><span ng-repeat="user in writingNow track by $index">{{user.firstName}}, </span>{{'IS_WRITING_NOW' | translate}}</p>
+		</div>
 
-				<button class="button button-icon icon ion-android-send footer-btn" type="submit" ng-disabled="!input.message || input.message === ''"
-				ng-click="sendMessage(input.message)"></button>
-			</div>
+		<textarea ng-model="input.message" ng-change="writing()" placeholder="{{'WRITE_A_MESSAGE' | translate}}"
+		ng-keyup="$event.keyCode == 13 && sendMessage(input.message)" required minlength="1" maxlength="1500" msd-elastic></textarea>
 
-			<a ng-click="refreshScroll(true, 50)" ng-show="!scrollDown" class="scrollDownBtn button button-icon icon ion-android-arrow-dropdown-circle"></a>
-			
+		<div class="footer-btn-wrap">
+			<input type="file" class="button button-icon icon ion-images button-dark button-clear photo" style="cursor: pointer;" id="upload_input" name="upload" accept="image/*"
+				onchange="angular.element(this).scope().sendPhoto(this)" on-tap="sendPhoto()" ng-model="fileinput" ng-if="!input.message || input.message === ''"/>
+			<button class="button button-icon icon ion-android-send footer-btn" style="cursor: pointer;" type="submit" ng-disabled="!input.message || input.message === ''"
+			ng-click="sendMessage(input.message)"></button>
+		</div>
 
-		</ion-footer-bar>
+		<a ng-click="loadMoreFlag = false; refreshScroll(true, 50)" ng-show="!scrollDown" class="scrollDownBtn button button-icon icon ion-android-arrow-dropdown-circle"></a>
+		
+	</ion-footer-bar>
 	<!-- </form> -->
 </ion-view>

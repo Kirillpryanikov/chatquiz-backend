@@ -1,10 +1,12 @@
 <ion-view view-title="Login" hide-back-button="true" name="login-view">
+
   <div class="loader-center" ng-if="doneLoading">
     <div class="loader">
       <i class="icon ion-load-c"></i>
     </div>
   </div>
-  <ion-content class="padding">
+
+  <ion-content overflow-scroll="false" class="padding">
       <div class="list list-inset">
         <form class="login-form" method="post" name="loginForm" novalidate>
           <p ng-show="valid.message" class="help-block">{{ 'MESSAGE_CAPS' | translate }}: {{valid.message}}</p>

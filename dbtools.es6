@@ -53,12 +53,12 @@ module.exports = {
                 console.log('Message get_history: ', e);
             }
         },
-        download_history: async (cb) => {
+        download_history: async (room, cb) => {
             try {
-                let response = await messages.find({});
+                let response = await messages.find({'room': room}).sort({ time: -1, _id: -1});
                 cb(null, response);
             } catch (e) {
-                console.log('Download history error: ', e);
+                cb(e, null);
             }
         },
         set_message: async (data) => {
@@ -137,8 +137,9 @@ module.exports = {
         },
         set_topic: async (room, topic) => {
             try {
-                const _topic = topic.substring(0, process.env.TOPIC_LENGTH);
-                await rooms.update({ room_id: room }, { topic: topic, room_id: room }, { upsert: true });
+                const _topic = topic.substring(0, parseInt(process.env.TOPIC_LENGTH));
+                await rooms.update({ room_id: room }, { topic: _topic, room_id: room }, { upsert: true });
+                console.log(_topic);
                 return _topic;
             } catch (e) {
                 console.log('Room update false: ', e);
