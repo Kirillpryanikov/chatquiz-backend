@@ -139,7 +139,6 @@ module.exports = {
             try {
                 const _topic = topic.substring(0, parseInt(process.env.TOPIC_LENGTH));
                 await rooms.update({ room_id: room }, { topic: _topic, room_id: room }, { upsert: true });
-                console.log(_topic);
                 return _topic;
             } catch (e) {
                 console.log('Room update false: ', e);

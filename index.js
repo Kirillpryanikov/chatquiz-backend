@@ -118,7 +118,7 @@ app.get("/download_history/:room", function(req, res) {
         .then(function() {
             tools.message.download_history(req.params.room, function(err, history) {
                 if (err) {
-                    log_errors.error("Download history: "+ err +" room: "+ req.params.room);
+                    log_errors.info("Download history: "+ err +" room: "+ req.params.room);
                 } else {
                     res.json(history);
                 }
@@ -128,28 +128,6 @@ app.get("/download_history/:room", function(req, res) {
             log_errors.error("Download history: " + err + " room: "+ req.params.room);
         });
 });
-//
-// app.get("/list/:id", function(req,res) {
-//     const options = {
-//         uri: `${url}/list/${req.params.id}`,
-//         headers: {
-//             "User-Agent": "Request-Promise",
-//             "x-app-key": app_key
-//         },
-//         json: true
-//     };
-//
-//     rp(options)
-//         .then(function(resp) {
-//             res.json(resp);
-//             console.log(resp);
-//         })
-//         .catch(function(err) {
-//             console.log(err);
-//             res.json(err);
-//         });
-//
-// });
 
 app.use(function(req, res) {
     log_errors.error("HTTP error  url:" + req.url);
@@ -254,12 +232,9 @@ io.sockets.on("connection", function (socket) {
         });
 
         socket.on("like", data => {
-            console.log(data);
             tools.message.set_like(data, function (err, resp) {
                 if (err) {
                     log_errors.error("SET LIKE room:"+ room.room +" user_id: "+ data.user_id + "| message_id: " + data.message_id + " | error: ", err);
-                    // msg.errors = err.response.body.message;
-                    // socket.emit("message", msg);
                 }
                 log_socket.info("SET LIKE room:"+ room.room +" user_id: "+ data.user_id + "| message_id: " + data.message_id);
                 io.sockets.in(room.room).emit("like", resp);                
