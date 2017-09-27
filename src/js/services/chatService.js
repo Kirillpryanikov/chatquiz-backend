@@ -3,77 +3,71 @@
 
     angular
         .module('App')
-        .factory('ChatService',['$http', '$q','$window','$state','BaseURL', '$rootScope', ChatService])
+        .factory('ChatService',['$http', '$q','$window','$state','BaseURL', ChatService])
         .factory('StorageService', ['$window', StorageService])
-        .factory('SockService', ['StorageService','$http', '$q','$window','$state','BaseURL', '$rootScope', SockService]);
+        .factory('SockService', ['StorageService','BaseURL', '$rootScope', SockService]);
 
-        //socket
-        function SockService(StorageService,$http, $q,$window,$state,BaseURL,$rootScope) {
-          var me={};
-          var apiUrl = BaseURL;
-          //console.log(BaseURL);
-          var user = StorageService.getAuthData();
-            me.connect = function () {
-              if($rootScope.sock) {
-                !$rootScope.sock.connected && $rootScope.sock.disconnect();
-              }
-           $rootScope.sock = io.connect(apiUrl,{transports: ['websocket']});
-              return $rootScope.sock;
-           };
-          return me;
-        };
-        function StorageService($window,$stateParams) {
-          var me={};
-          me.setAuthData = function (value) {
-            $window.localStorage['_user'] = JSON.stringify(value);
-          };
-          me.getAuthData = function() {
-            return JSON.parse($window.localStorage['_user'] || '{}');
-          };
-          me.setRoom = function (value) {
-            $window.localStorage.setItem('_room', value);
-          };
-          me.getRoom = function() {
-            return $window.localStorage.getItem('_room') || '';
-          };
-          return me;
-        };
-
-    function ChatService($http, $q,$window,$state,BaseURL, $rootScope) {
+    //socket
+    function SockService(StorageService, BaseURL, $rootScope) {
         var me = {};
-        var apiUrl = BaseURL;
-
-        me.logOut = function (_list, _tv) {
-          $window.localStorage['_user'] = false;
-          $state.go('login', { list: _list, tv: _tv, stateOut: true });
-        };
-
-        me.login = function(data){
-          var endpoint = "apiproxy/auth/";
-
-          return $http({
-            method: 'POST',
-            url: apiUrl+endpoint,
-            data: data,
-            transformRequest: function(obj) {
-                var str = [];
-                for(var p in obj)
-                str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-                return str.join("&");
+        const apiUrl = BaseURL;
+        //console.log(BaseURL);
+        const user = StorageService.getAuthData();
+        me.connect = function () {
+            if($rootScope.sock) {
+                !$rootScope.sock.connected && $rootScope.sock.disconnect();
             }
-          });
+            $rootScope.sock = io.connect(apiUrl,{transports: ['websocket']});
+            return $rootScope.sock;
         };
-        me.getUserMessages = function (d) {
+        return me;
+    }
 
+    function StorageService($window) {
+        var me = {};
+        me.setAuthData = function (value) {
+            $window.localStorage['_user'] = JSON.stringify(value);
+        };
+        me.getAuthData = function() {
+            return JSON.parse($window.localStorage['_user'] || '{}');
+        };
+        me.setRoom = function (value) {
+            $window.localStorage.setItem('_room', value);
+        };
+        me.getRoom = function() {
+            return $window.localStorage.getItem('_room') || '';
+        };
+        return me;
+    }
+
+    function ChatService($http, $q,$window,$state,BaseURL) {
+        var me = {};
+        const apiUrl = BaseURL;
+        me.logOut = function (_list, _tv) {
+            $window.localStorage['_user'] = false;
+            $state.go('login', { list: _list, tv: _tv, stateOut: true });
+        };
+        me.login = function(data) {
+            const endpoint = "apiproxy/auth/";
+            return $http({
+                method: 'POST',
+                url: apiUrl+endpoint,
+                data: data,
+                transformRequest: function(obj) {
+                    var str = [];
+                    for(var p in obj)
+                        str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+                    return str.join("&");
+                }
+            });
+        };
+        me.getUserMessages = function(d) {
             var deferred = $q.defer();
-
             setTimeout(function () {
                 deferred.resolve(getMockMessages());
             }, 1500);
-
             return deferred.promise;
         };
-
         me.getMockMessage = function () {
             return {
                 userId: '534b8e5aaa5e7afc1b23e69b',
@@ -83,23 +77,28 @@
         };
         me.getMockAuth = function () {
             return {
-              "data": [
-                {
-                  "id": "2212123321",
-                  "birthday": "1986-03-19",
-                  "firstName": "Monica",
-                  "imageUrl": "http://media.vanityfair.com/photos/58c2f5aa0a144505fae9e9ee/master/pass/avatar-sequels-delayed.jpg",
-                  "lastName": "Lupo",
-                  "taxCode": "SDASDFDASFFSD",
-                  "token": "asdfsadlkflkasdf==sadfasdfasdfklksdflgklgergok="
-                }
-              ]
+                "data": [
+                    {
+                        "id": "2212123321",
+                        "birthday": "1986-03-19",
+                        "firstName": "Monica",
+                        "imageUrl": "http://media.vanityfair.com/photos/58c2f5aa0a144505fae9e9ee/master/pass/avatar-sequels-delayed.jpg",
+                        "lastName": "Lupo",
+                        "taxCode": "SDASDFDASFFSD",
+                        "token": "asdfsadlkflkasdf==sadfasdfasdfklksdflgklgergok="
+                    }
+                ]
             }
-          };
-          me.loadMore = function (data) {
+        };
+        /**
+         * Load chunk of message history by page from specific room
+         */
+        me.loadMore = function (data) {
             return $http.get(BaseURL + 'history/' + data.room + '/' + data.page, data);
-          };
-
+        };
+        me.downloadHistory = function (room) {
+            return $http.get(BaseURL + 'download_history/' + room);
+        };
         return me;
     }
 

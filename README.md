@@ -31,5 +31,7 @@ For production:
 Environments variables are set using PM2. For updating variables values while server is running use: ```--update-env```
 
 ### Download history
-To download the message history, go to the URL ```http://youdomain.name/download_history``` and provide a token to confirm the user. 
-After that, file will load to you computer as _history.json_.
+To download the message history, go to the URL ```http://youdomain.name/#/roomID/download_history/``` and pass authorization.
+After that, link for load file will show on page and you can download history to you computer as _history.json_.
+
+Auth is provided by comparing user token and master token, which stores in .env file.

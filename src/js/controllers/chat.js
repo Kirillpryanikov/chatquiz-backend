@@ -5,14 +5,12 @@
         .module('App')
         .controller('MainCtrl', MainCtrl)
         .controller('LoginCtrl', LoginCtrl)
-        .controller('ChatController', ChatController);
-        MainCtrl.$inject = ['$scope', '$rootScope', '$state',
-        '$stateParams', 'ChatService', 'StorageService',
-        '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
-        '$ionicActionSheet', '$filter', '$ionicModal', '$q', '$location'];
+        .controller('ChatController', ChatController)
+        .controller('DownloadHistoryCtrl', DownloadHistoryCtrl)
+        .controller('ErrorPageCtrl', ErrorPageCtrl);
 
-    function MainCtrl($scope, $rootScope, $state, $stateParams, ChatService, StorageService,
-                      $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal, $q, $location) {
+    MainCtrl.$inject = ['$scope', '$rootScope', '$stateParams', 'ChatService', 'StorageService'];
+    function MainCtrl($scope, $rootScope, $stateParams, ChatService, StorageService) {
         $rootScope.usr = StorageService.getAuthData();
         $scope.logout = function () {
             ChatService.logOut($stateParams.list, $stateParams.tv);
@@ -20,28 +18,65 @@
         };
     }
 
-    // login
-    LoginCtrl.$inject = ['$scope', '$rootScope', '$state',
-        '$stateParams', 'ChatService', 'StorageService','$translate',
-        '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
-        '$ionicActionSheet', '$filter', '$ionicModal'];
+    ErrorPageCtrl.$inject = ['$scope', '$rootScope', '$state', '$stateParams', '$location', 'ChatService', '$window'];
+    function ErrorPageCtrl($rootScope, $window) {
+        $window.localStorage['_user'] = false;
+        $rootScope.usr = false;
+    }
 
-    function LoginCtrl($scope, $rootScope, $state, $stateParams, ChatService, StorageService, $translate,
-                       $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter, $ionicModal) {
-
-        if ($stateParams.stateOut){
-            msgSocket.emit('logout');
-        }    
-
+    DownloadHistoryCtrl.$inject = ['$scope', '$stateParams', 'ChatService', '$window'];
+    function DownloadHistoryCtrl($scope, $stateParams, ChatService, $window) {
         $scope.data = {};
         $scope.showAlert = function () {
-            var alertPopup = $ionicPopup.alert({
+            $ionicPopup.alert({
                 title: 'Oops...',
                 template: $translate.instant('INVALID_FORM_DATA')
             });
+        };
+        $scope.valid = {
+            password: false,
+            message: false
+        };
+        $scope.fileUrl = null;
+        $scope.download = function (form, data) {
+            $scope.doneLoading = true;
+            if (form.$valid) {
+                ChatService.login(data)
+                    .then(function() {
+                        ChatService.downloadHistory($stateParams.list)
+                            .then(function(resp) {
+                                const blob = new Blob([JSON.stringify(resp.data)], { type: 'text/plain' }),
+                                    url = $window.URL || $window.webkitURL;
+                                $scope.fileUrl = url.createObjectURL(blob);
+                                $scope.doneLoading = false;
+                            })
+                            .catch(function() {
+                                $scope.valid.message = "Invalid Token";
+                                $scope.doneLoading = false;
+                            });
+                    })
+                    .catch(function() {
+                        $scope.valid.message = "Access Invalid Credentials";
+                        $scope.doneLoading = false;
+                    });
+            } else {
+                $scope.showAlert();
+                $scope.doneLoading = false;
+            }
+        }
+    }
 
-            alertPopup.then(function (res) {
-                //console.log('Thank you for not eating my delicious ice cream cone');
+    // login
+    LoginCtrl.$inject = ['$scope', '$rootScope', '$state', '$stateParams', 'ChatService', 'StorageService','$translate', '$ionicPopup'];
+    function LoginCtrl($scope, $rootScope, $state, $stateParams, ChatService, StorageService, $translate, $ionicPopup) {
+
+        $stateParams.stateOut && msgSocket.emit('logout');
+
+        $scope.data = {};
+        $scope.showAlert = function () {
+            $ionicPopup.alert({
+                title: 'Oops...',
+                template: $translate.instant('INVALID_FORM_DATA')
             });
         };
 
@@ -91,32 +126,47 @@
     }
 
     // main chat ctrl
-    ChatController.$inject = ['$scope', '$rootScope', '$state',
-        '$stateParams', 'ChatService',
-        '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval',
-        '$ionicActionSheet', '$filter', '$ionicModal', 'SockService', 'userData', 'StorageService','$translate'];
+    ChatController.$inject = ['$scope', '$state','$stateParams', 'ChatService',
+        '$ionicPopup', '$ionicScrollDelegate', '$timeout', '$interval','$filter',
+        '$ionicModal', 'SockService', 'userData', '$translate'];
+    function ChatController($scope, $state, $stateParams, ChatService,
+                            $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $filter,
+                            $ionicModal, SockService, userData, translate) {
 
-    function ChatController($scope, $rootScope, $state, $stateParams, ChatService,
-                            $ionicPopup, $ionicScrollDelegate, $timeout, $interval, $ionicActionSheet, $filter,
-                            $ionicModal, SockService, userData, StorageService, translate) {
-        if (!userData) {
-            $state.go('login', { list: $stateParams.list, tv: $stateParams.tv });
-        }
+        // check userData on empty
+        !userData && $state.go('login', { list: $stateParams.list, tv: $stateParams.tv });
+
+        // set the device flag
+        // if mobile -> load by screen drag, else -> by mouse scroll
+        $scope.device_mobile = ionic.Platform.isIOS() || ionic.Platform.isWindowsPhone() || ionic.Platform.isAndroid();
+        $scope.NOTHING = false;
+        $scope.firstLaunch = true;
+
         var _lastWritingEvent = 0;
-        $scope.tv = $stateParams.tv === 'tv' ? true : false;
+        $scope.tv = $stateParams.tv === 'tv';
         $scope.writingNow = [];
 
         var blopFx = new Howl({
             src: ['sound/blop.mp3']
         });
-
         $scope.editTopic = function () {
             $scope.topic_edit = true;
-        }
+            $scope.topic_title_temp = $scope.topic_title;
+        };
         $scope.saveTopic = function (title) {
             $scope.topic_edit = false;
-            var message = {
-                message: translate.instant('CHANGE_TOPIC') + $scope.topic_title,
+            var cut_input = $scope.topic_title.substring(0, $scope.topic_max_length);
+
+            if ($scope.topic_title_temp === title || $scope.topic_title_temp === cut_input) {
+                $scope.topic_title = $scope.topic_title_temp;
+                delete $scope.topic_title_temp;
+                return;
+            } else {
+                $scope.topic_title = cut_input;
+            }
+
+            const message = {
+                message: translate.instant('CHANGE_TOPIC')+ ' ' + $scope.topic_title,
                 user: {
                     firstName: userData.firstName,
                     id: userData.id,
@@ -129,32 +179,38 @@
                 topic: $scope.topic_title
             };
             addMessage(message);
-           // $scope.topic_title = title;
+        };
 
-        }
         $scope.loadMore = function () {
             $scope.loadMoreFlag = true;
+            var newScroll = 0;
             $scope.page = !$scope.page ? 1 : parseInt($scope.page) + 1;
             ChatService.loadMore({room: $stateParams.list, page: $scope.page})
                 .then(function (resp) {
-                    var newScroll = 0;
+
+                    if (resp.data.length === 0) {
+                        $scope.NOTHING = true;
+                        return false;
+                    }
+
                     for ( var i = resp.data.length - 1; i >= 0 ; i-- ) {
                         $scope.messages.unshift(resp.data[i]);
                         var elem = angular.element(document.getElementsByClassName('message-wrapper'));
                         newScroll += elem[0].clientHeight;
+                        $ionicScrollDelegate.scrollTo(0, newScroll);
                     }
-                    $ionicScrollDelegate.scrollTo(0, newScroll);
                 })
                 .finally(function () {
                     $scope.$broadcast('scroll.refreshComplete');
+                    return true;
                 });
-        }
+        };
         $scope.writing = function () {
             var _now = Date.now();
-          if($scope.input.message && $scope.input.message.length > 0 && (_now - _lastWritingEvent > 5000)) {
-              msgSocket.emit('writing', {id: userData.id, firstName: userData.firstName });
-              _lastWritingEvent = _now;
-          }
+            if($scope.input.message && $scope.input.message.length > 0 && (_now - _lastWritingEvent > 5000)) {
+                msgSocket.emit('writing', {id: userData.id, firstName: userData.firstName });
+                _lastWritingEvent = _now;
+            }
 
         };
 
@@ -197,11 +253,16 @@
             $scope.topic_edit = false;
             msgSocket.on('room', function (resp) {
                 $scope.owner = resp;
+                if (resp.statusCode === 400 || resp.statusCode === 404) {
+                    $state.go('error_page');
+                    return;
+                }
                 if(!$scope.topic_title || resp.owner_id || resp.topic) {
                     if(resp.topic ) {
                         $scope.topic_title = resp.topic;
+                        $scope.topic_max_length = +resp.topic_length || 15;
                     }
-                    if(!$scope.topic_title && $scope.owner.owner_id)  {
+                    if(!$scope.topic_title && $scope.owner.owner_id === userData.id)  {
                         $scope.topic_title = translate.instant('SET_TOPIC');
                     }
                 }
@@ -272,6 +333,7 @@
 
             //images
             msgSocket.on('image', function (resp) {
+                $scope.loadMoreFlag = false;
                 if (resp.from.id === userData.id) {
                     if (resp.errors) {
                         $scope.doneLoading = true;
@@ -361,8 +423,6 @@
                     var file = e.files[0];
                     var reader = new FileReader();
                     reader.onload = function (evt) {
-                        console.log(evt.target);
-                        console.log(file);                        
                         $scope.msg = $scope.img_review = {};
                         $scope.img_review.image = evt.target.result;
                         $scope.msg.image = evt.target.result;
@@ -395,9 +455,9 @@
             $scope.msg.message = msg;
             msgSocket.emit('image', $scope.msg);
             delete($scope.img_review);
-        }
+        };
         $scope.sendMessage = function (sendMessageForm) {
-            var message = {
+            const message = {
                 message: $scope.input.message,
                 user: {
                     firstName: userData.firstName,
@@ -447,7 +507,6 @@
         $scope.scrollDown = true;
         $scope.checkScroll = function () {
             $timeout(function () {
-
                 try {
                     var currentTop = viewScroll.getScrollPosition().top;
                     var maxScrollableDistanceFromTop = viewScroll.getScrollView().__maxScrollTop;
@@ -455,8 +514,17 @@
                     $scope.$apply();
                 }
                 catch (e) {}
-
             }, 0);
+            if(!$scope.device_mobile) {
+                var scroll =  viewScroll.getScrollPosition();
+                if(scroll.top === 0) {
+                    if (!$scope.firstLaunch) {
+                        !$scope.NOTHING && $scope.loadMore();
+                    } else {
+                        $scope.firstLaunch = false;
+                    }
+                }
+            }
             return true;
         };
 
