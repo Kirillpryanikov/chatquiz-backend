@@ -26,12 +26,16 @@
 			</header>
 			<div class="uploading__body">
 				<img ng-src="{{img_review.image}}" alt="">
+
+                <div class="sign">
+                    <textarea rows="1" autofocus ng-model="img_review.message" ng-change="writing()" placeholder="{{'WRITE_A_MESSAGE' | translate}}"
+                              ng-keyup="$event.keyCode == 13 && sendPhotoMessage(img_review.message)" required minlength="1" maxlength="1500" msd-elastic></textarea>
+                    <button class="button button-icon icon ion-android-send footer-btn" type="submit"	ng-click="sendPhotoMessage(img_review.message)"></button>
+                </div>
 			</div>
 			<div class="uploading__footer">
 				<div class="uploading__footer__message">
-					<textarea rows="1" autofocus ng-model="img_review.message" ng-change="writing()" placeholder="{{'WRITE_A_MESSAGE' | translate}}"
-								ng-keyup="$event.keyCode == 13 && sendPhotoMessage(img_review.message)" required minlength="1" maxlength="1500" msd-elastic></textarea>
-					<button class="button button-icon icon ion-android-send footer-btn" type="submit"	ng-click="sendPhotoMessage(img_review.message)"></button>
+
 				</div>
 			</div>
 		</div>
