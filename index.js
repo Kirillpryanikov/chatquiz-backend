@@ -11,11 +11,8 @@ const process = require("process");
 const rfs = require("rotating-file-stream");
 const winston = require("winston");
 const app = express();
-const mongoose = require("mongoose");
 const dateformat = require("dateformat");
 const tools = require("./dbtools-compiled");
-const bodyParser = require("body-parser");
-// const tools = require("./dbtools.js");
 
 
 require("dotenv").config({
@@ -170,11 +167,9 @@ io.sockets.on("connection", function (socket) {
             .then(function (resp) {
                 data.owner_id = resp.data.userId;
                 data.statusCode = resp.code;
-
                 socket.emit("room", data);
             })
             .catch(function (err) {
-                console.log(err);
                 if (err.response.body.code === 400 || err.response.body.code === 404) {
                     log_errors.error("SOCKET room:"+ room.room + ", error: " + err.response.body.message);
 
@@ -192,7 +187,7 @@ io.sockets.on("connection", function (socket) {
                 headers: {
                     "User-Agent": "Request-Promise",
                     "x-app-key": app_key,
-                    "x-auth-token": data.user.token
+                    "x-auth-token": data.from.token
                 },
                 json: true
             };
@@ -200,19 +195,18 @@ io.sockets.on("connection", function (socket) {
             rp(options)
                 .then(function () {})
                 .catch(function (err) {
-                    log_errors.error("SOCKET room:"+ room.room +" user(id|name|message): "+ data.user.id + " | " +
-                        data.user.firstName + " | ", err.response.body.message);
+                    log_errors.error("SOCKET room:"+ room.room +" user(id|name|message): "+ data.from.id + " | " +
+                        data.from.firstName + " | ", err.response.body.message);
                     msg.errors = err.response.body.message;
                     socket.emit("message", msg);
                 });
 
             msg.message = data.message;
 
-            if (data.topic) {
-                tools.room.set_topic(room.room, data.topic).then(resp => msg.topic = resp);
-            }
+            data.topic && tools.room.set_topic(room.room, data.topic).then(resp => msg.topic = resp);
 
-            msg.from = data.user;
+
+            msg.from = data.from;
             msg.time = new Date();
             msg.room = room.room;
             msg.likes = [];
@@ -222,8 +216,8 @@ io.sockets.on("connection", function (socket) {
                     msg.msg_id = resp;
                     msg.time = dateformat(msg.time, "HH:MM");
                     io.sockets.in(room.room).emit("message", msg);
-                    log_socket.info("room:"+ room.room +" user(id|name|message): "+ data.user.id + " | "+
-                        data.user.firstName + " | " + data.message);
+                    log_socket.info("room:"+ room.room +" user(id|name|message): "+ data.from.id + " | "+
+                        data.from.firstName + " | " + data.message);
                 });
         });
 
@@ -234,13 +228,17 @@ io.sockets.on("connection", function (socket) {
         socket.on("like", data => {
             tools.message.set_like(data, function (err, resp) {
                 if (err) {
-                    log_errors.error("SET LIKE room:"+ room.room +" user_id: "+ data.user_id + "| message_id: " + data.message_id + " | error: ", err);
+                    log_errors.error("SET LIKE room:"+ room.room +" user_id: "+ data.user_id +
+                        " | message_id: " + data.message_id + " | error: ", err);
                 }
-                log_socket.info("SET LIKE room:"+ room.room +" user_id: "+ data.user_id + "| message_id: " + data.message_id);
+                log_socket.info("SET LIKE room:"+ room.room +" user_id: "+ data.user_id +
+                    " | message_id: " + data.message_id);
                 io.sockets.in(room.room).emit("like", resp);                
             });
         });
+
         socket.on("logout", room => socket.leave(room.room));
+
         socket.on("image", data => {
             let file = new Buffer(data.image, "base64");
 
@@ -271,7 +269,7 @@ io.sockets.on("connection", function (socket) {
                     let msg = {
                         message: data.message,
                         image: image.data.imageUrl,
-                        from: data.user,
+                        from: data.from,
                         time: new Date(),
                         room: room.room,
                         likes: []
@@ -286,18 +284,18 @@ io.sockets.on("connection", function (socket) {
 
                     fs.unlinkSync(data.image_name.toString());
                     log_socket.info("Image upload:: room:"+ room.room +" user(id|name|imageUrl): "
-                        + data.user.id + " | " + data.user.firstName +" | "+image.data.imageUrl);
+                        + data.from.id + " | " + data.from.firstName + " | " + image.data.imageUrl);
 
                 })
                 .catch(e => {
                     let msg = {
-                        from: data.user,
+                        from: data.from,
                         errors: JSON.parse(e.response.body),
                         time: new Date()
                     };
                     io.sockets.in(room.room).emit("image", msg);
                     fs.unlinkSync(data.image_name.toString());
-                    log_errors.error("SOCKET room:"+ room.room +" errors: ",msg.errors);
+                    log_errors.error("SOCKET room: " + room.room + " errors: ", msg.errors);
                 });
         });
 
