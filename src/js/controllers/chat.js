@@ -72,7 +72,6 @@
 
         $stateParams.stateOut && msgSocket.emit('logout');
 
-        $scope.data = {};
         $scope.showAlert = function () {
             $ionicPopup.alert({
                 title: 'Oops...',
@@ -80,6 +79,8 @@
             });
         };
 
+        $scope.data = {};
+        $scope.emailFormat = /^[a-z]+[a-z0-9._]+@[a-z]+\.[a-z.]{2,5}$/;
         $scope.valid = {
             password: false,
             message: false
@@ -113,7 +114,7 @@
                                 $scope.valid.message = resp.data.message;
                             }
                         } else {
-                            $scope.valid.message = "Access Invalid Credentials"
+                            $scope.valid.message = "Access Invalid Credentials";
                             $scope.doneLoading = false;
                         }
 
@@ -141,6 +142,8 @@
         $scope.device_mobile = ionic.Platform.isIOS() || ionic.Platform.isWindowsPhone() || ionic.Platform.isAndroid();
         $scope.NOTHING = false;
         $scope.firstLaunch = true;
+        // $scope.historySpinner = false;
+        // $scope.localMessages = [];
 
         var _lastWritingEvent = 0;
         $scope.tv = $stateParams.tv === 'tv';
@@ -149,10 +152,12 @@
         var blopFx = new Howl({
             src: ['sound/blop.mp3']
         });
+
         $scope.editTopic = function () {
             $scope.topic_edit = true;
             $scope.topic_title_temp = $scope.topic_title;
         };
+
         $scope.saveTopic = function (title) {
             $scope.topic_edit = false;
             var cut_input = $scope.topic_title.substring(0, $scope.topic_max_length);
@@ -167,7 +172,7 @@
 
             const message = {
                 message: translate.instant('CHANGE_TOPIC')+ ' ' + $scope.topic_title,
-                user: {
+                from: {
                     firstName: userData.firstName,
                     id: userData.id,
                     imageUrl: userData.imageUrl,
@@ -182,6 +187,8 @@
         };
 
         $scope.loadMore = function () {
+            // $scope.historySpinner = true;
+            $scope.doneLoading = false;
             $scope.loadMoreFlag = true;
             var newScroll = 0;
             $scope.page = !$scope.page ? 1 : parseInt($scope.page) + 1;
@@ -194,7 +201,7 @@
                     }
 
                     for ( var i = resp.data.length - 1; i >= 0 ; i-- ) {
-                        $scope.messages.unshift(resp.data[i]);
+                        $scope.messages.unshift(angular.extend({}, resp.data[i]));
                         var elem = angular.element(document.getElementsByClassName('message-wrapper'));
                         newScroll += elem[0].clientHeight;
                         $ionicScrollDelegate.scrollTo(0, newScroll);
@@ -202,16 +209,17 @@
                 })
                 .finally(function () {
                     $scope.$broadcast('scroll.refreshComplete');
+                    $scope.doneLoading = true;
                     return true;
                 });
         };
+
         $scope.writing = function () {
             var _now = Date.now();
-            if($scope.input.message && $scope.input.message.length > 0 && (_now - _lastWritingEvent > 5000)) {
+            if ($scope.input.message && $scope.input.message.length > 0 && (_now - _lastWritingEvent > 5000)) {
                 msgSocket.emit('writing', {id: userData.id, firstName: userData.firstName });
                 _lastWritingEvent = _now;
             }
-
         };
 
         $scope.showAlert = function (message) {
@@ -229,6 +237,7 @@
             }
             msgSocket.emit('like', {message_id: $scope.messages[index].msg_id, user_id: $scope.user.id});
         };
+
         var msgSocket = SockService.connect();
         if (!$scope.messages || $scope.messages === undefined) {
             $scope.messages = [];
@@ -242,36 +251,39 @@
                 }
             });
         };
-        if(userData) {
+
+        if (userData) {
             msgSocket.on('connect', function () {
                 $scope.doneLoading = false;
                 msgSocket.emit('room', {'room': $stateParams.list, 'userId': userData.id, 'username': userData.firstName,'token': userData.token});
-
             });
             //message
             $scope.owner = {};
             $scope.topic_edit = false;
             msgSocket.on('room', function (resp) {
+                $scope.doneLoading = false;
                 $scope.owner = resp;
                 if (resp.statusCode === 400 || resp.statusCode === 404) {
                     $state.go('error_page');
                     return;
-                }
-                if(!$scope.topic_title || resp.owner_id || resp.topic) {
-                    if(resp.topic ) {
-                        $scope.topic_title = resp.topic;
-                        $scope.topic_max_length = +resp.topic_length || 15;
+                } else {
+                    if (resp.history) {
+                        $scope.messages = resp.history;
                     }
-                    if(!$scope.topic_title && $scope.owner.owner_id === userData.id)  {
-                        $scope.topic_title = translate.instant('SET_TOPIC');
+                    if (!$scope.topic_title || resp.owner_id || resp.topic) {
+                        if (resp.topic) {
+                            $scope.topic_title = resp.topic;
+                            $scope.topic_max_length = +resp.topic_length || 15;
+                        }
+                        if (!$scope.topic_title && $scope.owner.owner_id === userData.id) {
+                            $scope.topic_title = translate.instant('SET_TOPIC');
+                        }
                     }
-                }
-                if(resp.history) {
-                    $scope.messages = resp.history;
                 }
                 $scope.doneLoading = true;
                 $scope.$apply();
             });
+
             //like
             msgSocket.on('like', function (resp) {
                 if(resp.message_id ) {
@@ -288,6 +300,7 @@
                 }
                 $scope.$apply();
             });
+
             //message
             msgSocket.on('message', function (resp) {
                 $scope.loadMoreFlag = false;
@@ -301,12 +314,20 @@
                 if(resp.topic) {
                     $scope.topic_title = resp.topic;
                 }
-                resp.ui = {};
-                resp.ui.time = moment().diff(resp.time) > 86400000 ? moment(resp.time).format('DD/MM/YYYY') : moment(resp.time).format('H:mm');
-                $scope.messages.push(resp);
+                // resp.ui = {};
+                // resp.time = moment().diff(resp.time) > 86400000 ? moment(resp.time).format('DD/MM/YYYY') : moment(resp.time).format('H:mm');
+
+                // if don't local then notify others
+                if (userData.id !== resp.from.id) {
+                    $scope.messages.push(resp);
+                }
+                // compare resp-message with local-message and replace
+                replaceMessage(resp);
+
                 $scope.$apply();
                 blopFx.play();
             });
+
             //writing
             msgSocket.on('writing', function (u) {
 
@@ -355,8 +376,16 @@
                     }
                     $scope.doneLoading = true;
                 }
-                $scope.messages.push(resp);
+
+                // if don't local then notify others
+                if (userData.id !== resp.from.id) {
+                    $scope.messages.push(resp);
+                }
+                // compare resp-message with local-message and replace
+                replaceMessage(resp);
+
                 $scope.$apply();
+                blopFx.play();
             });
         } //end of > if (userData)
 
@@ -406,12 +435,42 @@
             //if (!newValue) newValue = '';
         });
 
+        var replaceMessage = function (origin) {
+            for (var i = $scope.messages.length - 1; i >= 0 ; i--) {
+                if ($scope.messages[i].replace && $scope.messages[i].message === origin.message) {
+                    $scope.messages.splice($scope.messages.indexOf($scope.messages[i]), 1);
+                    $scope.messages.push(origin);
+                    break;
+                }
+            }
+        };
+
+        // render local message before it sended to server
+        var renderLocalMessage = function(message) {
+            var localm = message;
+            localm.replace = true;
+            localm.time = $filter('date')(new Date(), 'HH:mm');
+            $scope.messages.push(localm);
+        };
+
+        // render local message with image before it sended to server
+        var renderLocalImageMessage = function(message) {
+            var localm = angular.copy(message);
+            localm.replace = true;
+            delete localm.image;
+            localm.time = $filter('date')(new Date(), 'HH:mm');
+            $scope.messages.push(localm);
+        };
+
+        // send to server to added record to database
         var addMessage = function (message) {
             msgSocket.emit('message', message);
         };
+
         $scope.closeUpload = function () {
             delete($scope.img_review);
         };
+
         $scope.sendPhoto = function (e) {
             var fileTypes = ['jpg', 'jpeg', 'png', 'ico'];
             if (e && e.files && e.files.length > 0) {
@@ -428,14 +487,14 @@
                         $scope.msg.image = evt.target.result;
                         $scope.msg.image_name = file.name;
                         $scope.msg.token = userData.token;
-                        $scope.msg.user = {
+                        $scope.msg.from = {
                             firstName: userData.firstName,
                             id: userData.id,
                             imageUrl: userData.imageUrl,
                             owner_id: $scope.owner.owner_id,
                             owner_color: $scope.owner.color,
                             owner_text_color: $scope.owner.text_color
-                        }
+                        };
                         $scope.$apply();
 
                     };
@@ -453,13 +512,15 @@
         };
         $scope.sendPhotoMessage = function (msg) {
             $scope.msg.message = msg;
+            renderLocalImageMessage($scope.msg);
             msgSocket.emit('image', $scope.msg);
-            delete($scope.img_review);
+            $scope.closeUpload();
         };
-        $scope.sendMessage = function (sendMessageForm) {
-            const message = {
+
+        $scope.sendMessage = function () {
+            var message = {
                 message: $scope.input.message,
-                user: {
+                from: {
                     firstName: userData.firstName,
                     id: userData.id,
                     imageUrl: userData.imageUrl,
@@ -478,6 +539,11 @@
             //ChatService.sendMessage(message).then(function(data) {
 
             $scope.input.message = '';
+
+            if (userData.id) {
+                renderLocalMessage(message);
+            }
+
             addMessage(message);
             $timeout(function () {
                 keepKeyboardOpen();
@@ -498,13 +564,15 @@
                     scrollBottom = scrollBottom || $scope.scrollDown;
                     viewScroll.resize();
                     if (scrollBottom) {
-                        viewScroll.scrollBottom(true);
+                        viewScroll.scrollBottom(false);
                     }
                     $scope.checkScroll();
-                }, timeout || 1000);
+                }, timeout || 0);
             }
         };
+
         $scope.scrollDown = true;
+
         $scope.checkScroll = function () {
             $timeout(function () {
                 try {
@@ -515,7 +583,7 @@
                 }
                 catch (e) {}
             }, 0);
-            if(!$scope.device_mobile) {
+            if (!$scope.device_mobile) {
                 var scroll =  viewScroll.getScrollPosition();
                 if(scroll.top === 0) {
                     if (!$scope.firstLaunch) {
