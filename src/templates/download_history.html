@@ -1,0 +1,36 @@
+<ion-view view-title="DownloadHistory" hide-back-button="true" name="download-history-view">
+
+  <div class="loader-center" ng-if="doneLoading">
+    <div class="loader">
+      <i class="icon ion-load-c"></i>
+    </div>
+  </div>
+
+  <ion-content overflow-scroll="false" class="padding">
+
+    <div class="list list-inset">
+      <form class="login-form" method="post" name="authForm" novalidate>
+        <p ng-show="valid.message" class="help-block">{{ 'MESSAGE_CAPS' | translate }}: {{valid.message}}</p>
+
+        <label class="item item-input">
+            <input type="email" name="email" placeholder="mail" ng-model="data.email"
+            ng-class="{ 'has-error' : authForm.email.$invalid && !authForm.email.$pristine }" required>
+        </label>
+
+        <p ng-show="authForm.email.$invalid && !authForm.email.$pristine || valid.email" class="help-block">{{'EMAIL_REQUIRED' || translate}}</p>
+
+        <label class="item item-input">
+            <input type="password" name="pass" placeholder="Password" ng-model="data.password"
+            ng-class="{ 'has-error' : authForm.pass.$invalid && !authForm.pass.$pristine }" required />
+        </label>
+        <p ng-show="authForm.pass.$invalid && !authForm.pass.$pristine || valid.pass" class="help-block">{{'PASSWORD_REQUIRED' || translate}}</p>
+      </form>
+
+    </div>
+    <button class="button button-block button-calm login-btn" ng-click="download(authForm, data)">{{'DOWNLOAD_HISTORY' || translate}}</button>
+
+    <div class="download-button" ng-if="fileUrl">
+      <a ng-href="{{ fileUrl }}"  download="history.json">Download file</a>
+    </div>
+  </ion-content>
+</ion-view>

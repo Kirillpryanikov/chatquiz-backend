@@ -1,4 +1,11 @@
-/node_modules
-/dist
-/log
-/.idea
+/node_modules/
+/dist/*
+/log/
+/.idea/
+!/dist/sound
+.idea/
+.env
+
+/databases/
+
+dbtools-compiled.js

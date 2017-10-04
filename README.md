@@ -1,47 +1,37 @@
-#ChatQuiz app
+## Chat microservice for LNO
 
----
-## Front
-```
-npm install
-npm install -g gulp (if needed)
-gulp
-```
-## Important !
+### Instalation
+```git clone https://github.com/Growish/chat-service.git```
 
-If bowert dependencies were not installed with postinstall in package.json,do it manually
+```cd chat-service```
 
-```
-cd quiz
-bower install
-cd ../imagechat
-bower install
-```
-http://localhost:8080/quiz/#/:room/quiz
-http://localhost:8080/imagechat/#/:room/chat
+```npm install```
+
+```bower install```
+
+```gulp```
+
+```create and config file .env like env.example```
+------
 
 
-## Server
-For local development:
 
-` node index.js `
+For local developing server
+
+```npm run start:pm2:dev```
 
 For staging:
 
-` npm run start:pm2:dev`
+```npm run start:pm2:stage```
 
 For production:
 
-` npm run start:pm2:prod`
+```npm run start:pm2:prod```
 
-To stop the server:
+Environments variables are set using PM2. For updating variables values while server is running use: ```--update-env```
 
-`npm run stop:pm2`
+### Download history
+To download the message history, go to the URL ```http://youdomain.name/#/roomID/download_history/``` and pass authorization.
+After that, link for load file will show on page and you can download history to you computer as _history.json_.
 
-To restart server:
-
-`npm run restart:pm2`
-
-To show status:
-
-`npm run status:pm2`
+Auth is provided by comparing user token and master token, which stores in .env file.
