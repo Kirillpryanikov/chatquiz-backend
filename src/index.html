@@ -21,13 +21,14 @@
     <script src="lib/angular-translate/angular-translate.min.js"></script>
     <script src="lib/howler.js/dist/howler.min.js"></script>
     <script src="lib/ionic-image-lazy-load/ionic-image-lazy-load.js"></script>
-    <script src="script.min.js"></script>
+    <script src="script.js"></script>
   </head>
 
   <body ng-app="App" >
 
     <ion-nav-bar class="bar-dark" no-tap-scroll="false" ng-controller="MainCtrl">
-        <button id="logout" ng-if="usr.token" ng-click="logout()" class="button icon-left ion-log-out button-clear button-dark">{{'CLOSE_SESSION' | translate}}</button>
+        <button id="logout" ng-if="usr.token" ng-click="logout()" class="button icon-left ion-log-out button-clear button-dark hidden-xs-sm">{{'CLOSE_SESSION' | translate}}</button>
+        <button id="logout" ng-if="usr.token" ng-click="logout()" class="button icon-right ion-log-out button-clear button-dark hidden-md-lg"></button>
     </ion-nav-bar>
 
     <ion-nav-view animation="slide-left-right"></ion-nav-view> 

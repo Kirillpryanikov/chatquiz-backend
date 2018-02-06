@@ -6,9 +6,10 @@
         </div>
     </div>
 
-    <ion-content overflow-scroll="false" class="padding">
+    <ion-content overflow-scroll="false" class="padding aligner">
         <!--<div class="list list-inset">-->
-            <form class="login-form" method="post" name="loginForm" novalidate>
+        <div class="login-form-conteiner">
+            <form class="login-form center-align" method="post" name="loginForm" novalidate>
                 <p ng-show="valid.message" class="help-block">{{ 'MESSAGE_CAPS' | translate }}: {{valid.message}}</p>
                 <label class="item item-input">
                     <input type="email" name="email" placeholder="mail" ng-model="data.email" ng-pattern="emailFormat"
@@ -21,8 +22,9 @@
                 </label>
             </form>
 
-        <!--</div>-->
-        <button class="button button-block button-calm login-btn" ng-click="login(loginForm,data)">{{'LOGIN_BUTTON_TEXT' || translate}}</button>
+            <!--</div>-->
+            <button class="button button-block button-calm login-btn " ng-click="login(loginForm,data)">{{'LOGIN_BUTTON_TEXT' || translate}}</button>
 
+        </div>
     </ion-content>
 </ion-view>
