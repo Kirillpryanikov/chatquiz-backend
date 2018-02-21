@@ -1,19 +1,31 @@
-const tools   = require("../dbtools");
-const Joi     = require('joi');
-
-const logger  = require("../utils/logger");
-const api     = require('../utils/api');
-
-const fs        = require("fs");
-const dateformat = require("dateformat");
-
-const tmpDirectory = './tmp';
-
-
+const tools             = require("../dbtools");
+const Joi               = require('joi');
+const logger            = require("../utils/logger");
+const api               = require('../utils/api');
+const fs                = require("fs");
+const dateformat        = require("dateformat");
+const pmx               = require('../utils/keymetrics');
 const topicSchema       = require('../schema/topic');
 const handshakeSchema   = require('../schema/handshake');
 
+const tmpDirectory = './tmp';
+
+const probe             = pmx.probe();
+const connectionsProbe  = probe.metric({
+    name    : 'Chat connections'
+});
+
+connectionsProbe.set(0);
+
 let io;
+
+const refreshConnectionsProbe = () => {
+    io.of('/').clients((error, clients) => {
+        if (!error) {
+            connectionsProbe.set(clients.length);
+        }
+    });
+};
 
 module.exports.setIO = function (_io) {
     io = _io;
@@ -34,6 +46,8 @@ module.exports.controller = (socket) => {
         remoteAddress: socket.handshake.address
     });
 
+    refreshConnectionsProbe();
+
 
     socket.on("disconnect", () => {
 
@@ -47,6 +61,8 @@ module.exports.controller = (socket) => {
             socketId: socket.id,
             remoteAddress: socket.handshake.address
         });
+
+        refreshConnectionsProbe();
 
     });
 

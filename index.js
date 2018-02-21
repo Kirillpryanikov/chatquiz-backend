@@ -9,17 +9,15 @@ const process   = require("process");
 
 
 const apiProxyController        = require('./controllers/api-proxy');
-const historyController         = require('./controllers/history');
 const downloadHistoryController = require('./controllers/download-history');
-const socketModule          = require('./controllers/socket');
+const socketModule              = require('./controllers/socket');
 
 const app = express();
-
-
 
 const port = process.env.GW_SERVER_PORT;
 const server = http.createServer(app);
 const io = socketIO(server);
+
 
 process.title = "chatMicroS";
 
@@ -29,7 +27,6 @@ app.use(cors());
 
 
 app.use('/apiproxy', apiProxyController);
-app.get("/history/:room/:page", historyController);
 app.get("/download_history/:room", downloadHistoryController);
 
 
