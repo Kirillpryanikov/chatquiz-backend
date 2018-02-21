@@ -21,25 +21,31 @@ const optionGen = function (endpoint) {
 };
 
 module.exports = {
+
     setToken: function (_token) {
         token = _token;
     },
+
     checkToken: function () {
-        return rp(optionGen("/check-token/")).catch(err => new ApiError({ endpoint: 'check-token', message: err.response.body.message || ""}));
+        return rp(optionGen("/check-token/")).catch(err => Promise.reject(new ApiError({ endpoint: 'check-token', message: err.response.body.message || ""})));
     },
+
     getUser: function (userId) {
-        return rp(optionGen(`/user/${userId}/`)).catch(err => new ApiError({ endpoint: 'user', message: err.response.body.message || ""}));
+        return rp(optionGen(`/user/${userId}/`)).catch(err => Promise.reject(new ApiError({ endpoint: 'user', message: err.response.body.message || ""})));
     },
+
     getList: function (listId) {
-        return rp(optionGen(`/list/${listId}/`)).catch(err => new ApiError({ endpoint: 'list', message: err.response.body.message || ""}));
+        return rp(optionGen(`/list/${listId}/`)).catch(err => Promise.reject(new ApiError({ endpoint: 'list', message: err.response.body.message || ""})));
     },
+
     uploadImage: function (options) {
         var httpOptions = optionGen(`/list/${options.room}/chat-image-upload/`);
         delete httpOptions.json;
         httpOptions.method = 'POST';
         httpOptions.formData = options.formData;
-        return rp(httpOptions).catch(err => new ApiError({ endpoint: 'upload-image', message: err.response.body.message || ""}));
+        return rp(httpOptions).catch(err => Promise.reject(new ApiError({ endpoint: 'upload-image', message: err.response.body.message || ""})));
     },
+
     errorParser: function (e) {
         try {
             const response = JSON.parse(e.response.body).message;
