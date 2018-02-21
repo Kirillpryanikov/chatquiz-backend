@@ -85,12 +85,14 @@ module.exports.controller = (socket) => {
 
 
         api.checkToken()
-            .then(function (res) {
-
-                console.log(">>>", res.response.body.code);
-
-                return api.getUser(payload.userId);
-            })
+            .then(
+                function success() {
+                    return api.getUser(payload.userId);
+                },
+                function error(err) {
+                    console.log(">>>123", err.response.body.code);
+                }
+            )
             .then(function (apiPayload) {
 
                 socket.locals.user = {
