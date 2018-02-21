@@ -28,17 +28,17 @@ module.exports = {
         return rp(optionGen("/check-token/")).catch(err => new ApiError({ endpoint: 'check-token', message: err.response.body.message || ""}));
     },
     getUser: function (userId) {
-        return rp(optionGen(`/user/${userId}/`));
+        return rp(optionGen(`/user/${userId}/`)).catch(err => new ApiError({ endpoint: 'user', message: err.response.body.message || ""}));
     },
     getList: function (listId) {
-        return rp(optionGen(`/list/${listId}/`));
+        return rp(optionGen(`/list/${listId}/`)).catch(err => new ApiError({ endpoint: 'list', message: err.response.body.message || ""}));
     },
     uploadImage: function (options) {
         var httpOptions = optionGen(`/list/${options.room}/chat-image-upload/`);
         delete httpOptions.json;
         httpOptions.method = 'POST';
         httpOptions.formData = options.formData;
-        return rp(httpOptions);
+        return rp(httpOptions).catch(err => new ApiError({ endpoint: 'upload-image', message: err.response.body.message || ""}));
     },
     errorParser: function (e) {
         try {
