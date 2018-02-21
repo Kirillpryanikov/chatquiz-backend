@@ -6,6 +6,8 @@ const app_key = process.env.GW_APP_KEY;
 
 let token;
 
+class ApiError extends Error {};
+
 const optionGen = function (endpoint) {
     return {
         uri: url + endpoint,
@@ -23,7 +25,7 @@ module.exports = {
         token = _token;
     },
     checkToken: function () {
-        return rp(optionGen("/check-token/"));
+        return rp(optionGen("/check-token/")).catch(err => new ApiError({ endpoint: 'check-token', message: err.response.body.message || ""}));
     },
     getUser: function (userId) {
         return rp(optionGen(`/user/${userId}/`));
