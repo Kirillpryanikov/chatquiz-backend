@@ -24,7 +24,7 @@ module.exports = (req, res) => {
             logger.info("Requesting history download for room", { room: req.params.room });
 
             //TODO: CONVERT TO PROMISE
-            tools.message.downloadHistory(req.params.room, function(err, history) {
+            tools.message.download12History(req.params.room, function(err, history) {
                 if (err) {
                     logger.error("Download history: "+ err +" room: "+ req.params.room);
                 } else {

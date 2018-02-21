@@ -1,11 +1,17 @@
-const rp      = require("request-promise");
 const tools   = require("../dbtools");
+const Joi     = require('joi');
 
 const logger  = require("../utils/logger");
 const api     = require('../utils/api');
 
 const fs        = require("fs");
 const dateformat = require("dateformat");
+
+const tmpDirectory = './tmp';
+
+
+const topicSchema       = require('../schema/topic');
+const handshakeSchema   = require('../schema/handshake');
 
 let io;
 
@@ -15,14 +21,47 @@ module.exports.setIO = function (_io) {
 
 module.exports.controller = (socket) => {
 
+    const handshakeTimer = setTimeout(() => {
+        socket.disconnect();
+        logger.info('Socket disconnected, handshake timeout', {
+            socketId: socket.id,
+            remoteAddress: socket.handshake.address
+        });
+    }, 10000);
+
     logger.info("New socket connection", {
         socketId: socket.id,
-        remoteAddress: socket.request.connection.remoteAddress
+        remoteAddress: socket.handshake.address
+    });
+
+
+    socket.on("disconnect", () => {
+
+        if(socket.locals && socket.locals.room)
+            socket.leave(socket.locals.room);
+
+        if(handshakeTimer)
+            clearTimeout(handshakeTimer);
+
+        logger.info("Socket disconnected", {
+            socketId: socket.id,
+            remoteAddress: socket.handshake.address
+        });
+
     });
 
     socket.on("handshake", function (payload) {
 
-        //TODO: PAYLOAD NEEDS TO BE VALIDATED
+        clearTimeout(handshakeTimer);
+
+        const validation = Joi.validate(payload, handshakeSchema);
+        if(validation.error) {
+            logger.error("Error while handshaking", {
+                validation_err: validation.message
+            });
+            return false;
+        }
+
 
         socket.locals = {};
 
@@ -37,6 +76,7 @@ module.exports.controller = (socket) => {
 
                 logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room });
                 socket.emit("chat_error", {
+                    code: 99,
                     message: "Sessione scaduta"
                 });
 
@@ -92,11 +132,11 @@ module.exports.controller = (socket) => {
             })
             .catch(function (err) {
 
-                //TODO: INVALID ERROR PARSING!
                 if (err.response.body.code === 403 || err.response.body.code === 404) {
                     logger.info("Dropping user from invalid channel", { userId: payload.userId, room: payload.room });
 
                     socket.emit("chat_error", {
+                        code: 98,
                         message: "Canale non attivo o inesistente"
                     });
                 }
@@ -138,12 +178,21 @@ module.exports.controller = (socket) => {
                 return false;
             }
 
-            //TODO: VALIDATE TOPIC
+            Joi.validate(topic, topicSchema, (err) => {
 
-            tools.room.setTopic(socket.locals.room, topic);
+                if(err) {
+                    logger.error("Error changing topic", { room: socket.locals.room, topic: topic, validation_err: err.message } );
+                    return;
+                }
 
-            logger.info("Changing topic", { room: socket.locals.room, topic: topic } );
-            io.sockets.in(socket.locals.room).emit("topic_update", topic);
+                tools.room.setTopic(socket.locals.room, topic);
+
+                logger.info("Changing topic", { room: socket.locals.room, topic: topic } );
+                io.sockets.in(socket.locals.room).emit("topic_update", topic);
+
+            });
+
+
 
 
         });
@@ -175,8 +224,6 @@ module.exports.controller = (socket) => {
 
         socket.on("image", data => {
 
-            const tmpDirectory = './tmp';
-
             if (!fs.existsSync(tmpDirectory))
                 fs.mkdirSync(tmpDirectory);
 
@@ -184,8 +231,10 @@ module.exports.controller = (socket) => {
 
             fs.writeFile(fileLocation, data.image.split(",")[1], { encoding: "base64" },
                 (err) => {
+
                     if(err) {
                         socket.emit("chat_error", {
+                            code: 100,
                             message: "Errore durante il caricamento dell'immagine, i nostri tecnici sono stati notificati"
                         });
                         logger.error("Error saving to file system", err);
@@ -238,7 +287,8 @@ module.exports.controller = (socket) => {
                             var message = api.errorParser(e);
 
                             socket.emit("chat_error", {
-                                message: message || "Errore durante il caricamento dell'immagine, i nostri tecnici sono stati notificati"
+                                code: 100,
+                                message: "Tentativo di caricamento dell'immagine fallito: " + message || "Errore durante il caricamento dell'immagine, i nostri tecnici sono stati notificati"
                             });
 
                             logger.error("Error uploading image", { userId: socket.locals.user.id, room: socket.locals.room, message: message });
@@ -265,8 +315,6 @@ module.exports.controller = (socket) => {
                 );
 
         });
-
-        socket.on("disconnect", room => socket.leave(socket.locals.room));
 
     });
 

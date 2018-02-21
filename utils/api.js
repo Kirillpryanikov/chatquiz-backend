@@ -40,7 +40,25 @@ module.exports = {
     },
     errorParser: function (e) {
         try {
-            return JSON.parse(e.response.body).message;
+            const response = JSON.parse(e.response.body).message;
+
+            if(typeof response === 'string')
+                return response;
+
+            let concatResponse = '';
+            for (let key in response) {
+                if (response.hasOwnProperty(key)) {
+                    for (let ikey in response[key]) {
+                        if (response[key].hasOwnProperty(ikey)) {
+                            concatResponse += response[key][ikey] + ". ";
+                        }
+                    }
+
+                }
+            }
+
+            return concatResponse;
+
         }
         catch (e) {
             return null;

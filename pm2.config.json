@@ -1,6 +1,6 @@
 {
   "apps" : [{
-    "name"        : "chatLNO",
+    "name"        : "chatService",
     "script"      : "./index.js",
     "watch"       : false,
     "env": {
