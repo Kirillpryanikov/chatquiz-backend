@@ -148,7 +148,7 @@ module.exports.controller = (socket) => {
             })
             .catch(function (err) {
 
-                console.log(err.response);
+                console.log(err);
 
                 if (err.response.body.code === 403 || err.response.body.code === 404) {
                     logger.info("Dropping user from invalid channel", { userId: payload.userId, room: payload.room });
