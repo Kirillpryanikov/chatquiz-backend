@@ -90,6 +90,7 @@ module.exports.controller = (socket) => {
                     return api.getUser(payload.userId);
                 },
                 function error(err) {
+                    console.log('ooo', err);
                     throw new Error({ place: 'session', body: err.response.body });
                 }
             )
