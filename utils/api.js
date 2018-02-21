@@ -6,7 +6,15 @@ const app_key = process.env.GW_APP_KEY;
 
 let token;
 
-class ApiError extends Error {};
+class ApiError extends Error {
+
+    constructor(endpoint, message = '') {
+        super();
+        this.endpoint = endpoint;
+        this.message = message;
+    }
+
+};
 
 const optionGen = function (endpoint) {
     return {
@@ -27,15 +35,15 @@ module.exports = {
     },
 
     checkToken: function () {
-        return rp(optionGen("/check-token/")).catch(err => Promise.reject(new ApiError({ endpoint: 'check-token', message: err.response.body.message || ""})));
+        return rp(optionGen("/check-token/")).catch(err => Promise.reject(new ApiError('check-token',  err.response.body.message)));
     },
 
     getUser: function (userId) {
-        return rp(optionGen(`/user/${userId}/`)).catch(err => Promise.reject(new ApiError({ endpoint: 'user', message: err.response.body.message || ""})));
+        return rp(optionGen(`/user/${userId}/`)).catch(err => Promise.reject(new ApiError('user', err.response.body.message)));
     },
 
     getList: function (listId) {
-        return rp(optionGen(`/list/${listId}/`)).catch(err => Promise.reject(new ApiError({ endpoint: 'list', message: err.response.body.message || ""})));
+        return rp(optionGen(`/list/${listId}/`)).catch(err => Promise.reject(new ApiError('list', err.response.body.message)));
     },
 
     uploadImage: function (options) {
@@ -43,7 +51,7 @@ module.exports = {
         delete httpOptions.json;
         httpOptions.method = 'POST';
         httpOptions.formData = options.formData;
-        return rp(httpOptions).catch(err => Promise.reject(new ApiError({ endpoint: 'upload-image', message: err.response.body.message || ""})));
+        return rp(httpOptions).catch(err => Promise.reject(new ApiError('upload-image', err.response.body.message)));
     },
 
     errorParser: function (e) {

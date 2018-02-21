@@ -155,7 +155,7 @@ module.exports.controller = (socket) => {
             .catch(function (err) {
 
 
-                console.log(">>>", typeof err, err);
+                console.log(">>>", typeof err, err, err.endpoint, err.message);
                 return;
 
                 //HTTP ERROR
