@@ -106,6 +106,7 @@ module.exports.controller = (socket) => {
 
                 },
                 function error(err) {
+                    console.log("---", err);
                     throw new Error({ place: 'user', body: err.response.body });
                 }
             )
