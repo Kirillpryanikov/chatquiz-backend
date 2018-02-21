@@ -155,16 +155,11 @@ module.exports.controller = (socket) => {
             .catch(function (err) {
 
 
-                console.log(">>>", typeof err, err, err.endpoint, err.message);
-                return;
+                if(err.constructor.name === 'ApiError') {
 
-                //HTTP ERROR
-                if(typeof err.place === 'string') {
+                    switch(err.endpoint) {
 
-
-                    switch(err.place) {
-
-                        case 'session':
+                        case 'check-token':
 
                             logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room, errorBody: err.body });
                             socket.emit("chat_error", {
@@ -198,6 +193,7 @@ module.exports.controller = (socket) => {
                     }
 
                 }
+
                 //APPLICATION ERROR
                 else {
 
@@ -209,8 +205,6 @@ module.exports.controller = (socket) => {
                     });
 
                 }
-
-
 
                 socket.disconnect();
 
