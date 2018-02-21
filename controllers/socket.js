@@ -88,16 +88,6 @@ module.exports.controller = (socket) => {
             .then(function () {
                 return api.getUser(payload.userId);
             })
-            .catch(function (err) {
-
-                logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room });
-                socket.emit("chat_error", {
-                    code: 99,
-                    message: "Sessione scaduta"
-                });
-
-                socket.disconnect();
-            })
             .then(function (apiPayload) {
 
                 socket.locals.user = {
@@ -150,16 +140,25 @@ module.exports.controller = (socket) => {
 
                 console.log(err);
 
-                if (err.response.body.code === 403 || err.response.body.code === 404) {
-                    logger.info("Dropping user from invalid channel", { userId: payload.userId, room: payload.room });
 
-                    socket.emit("chat_error", {
-                        code: 98,
-                        message: "Canale non attivo o inesistente"
-                    });
-                }
-
-                socket.disconnect();
+                // logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room });
+                // socket.emit("chat_error", {
+                //     code: 99,
+                //     message: "Sessione scaduta"
+                // });
+                //
+                // socket.disconnect();
+                //
+                // if (err.response.body.code === 403 || err.response.body.code === 404) {
+                //     logger.info("Dropping user from invalid channel", { userId: payload.userId, room: payload.room });
+                //
+                //     socket.emit("chat_error", {
+                //         code: 98,
+                //         message: "Canale non attivo o inesistente"
+                //     });
+                // }
+                //
+                // socket.disconnect();
 
             });
 
