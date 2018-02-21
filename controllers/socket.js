@@ -90,7 +90,7 @@ module.exports.controller = (socket) => {
                     return api.getUser(payload.userId);
                 },
                 function error(err) {
-                    throw { place: 'session', body: err.response.body };
+                    throw new Error({ place: 'session', body: err.response.body });
                 }
             )
             .then(
@@ -106,7 +106,7 @@ module.exports.controller = (socket) => {
 
                 },
                 function error(err) {
-                    throw { place: 'user', body: err.response.body };
+                    throw new Error({ place: 'user', body: err.response.body });
                 }
             )
             .then(
@@ -149,7 +149,8 @@ module.exports.controller = (socket) => {
 
             },
                 function error(err) {
-                    throw { place: 'list', body: err.response.body };
+                    console.log("+++", err);
+                    throw new Error({ place: 'list', body: err.response.body });
                 }
             )
             .catch(function (err) {
