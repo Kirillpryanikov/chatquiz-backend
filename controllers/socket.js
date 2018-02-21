@@ -138,7 +138,7 @@ module.exports.controller = (socket) => {
             })
             .catch(function (err) {
 
-                console.log(err);
+                console.log(err.response.body);
 
 
                 // logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room });
