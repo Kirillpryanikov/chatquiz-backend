@@ -88,11 +88,10 @@ module.exports.controller = (socket) => {
             .then(
                 function success() {
                     return api.getUser(payload.userId);
-                },
-                function error(err) {
-                    console.log('ooo', err);
-                    throw new Error({ place: 'session', body: err.response.body });
                 }
+                // function error(err) {
+                //     throw new Error({ place: 'session', body: err.response.body });
+                // }
             )
             .then(
                 function success(apiPayload) {
@@ -105,11 +104,10 @@ module.exports.controller = (socket) => {
 
                     return api.getList(payload.room);
 
-                },
-                function error(err) {
-                    console.log("---", err);
-                    throw new Error({ place: 'user', body: err.response.body });
                 }
+                // function error(err) {
+                //     throw new Error({ place: 'user', body: err.response.body });
+                // }
             )
             .then(
                 function success (apiPayload) {
@@ -149,14 +147,16 @@ module.exports.controller = (socket) => {
                             }
                         );
 
-            },
-                function error(err) {
-                    console.log("+++", err);
-                    throw new Error({ place: 'list', body: err.response.body });
-                }
+            }
+                // function error(err) {
+                //     throw new Error({ place: 'list', body: err.response.body });
+                // }
             )
             .catch(function (err) {
 
+
+                console.log(err);
+                return;
 
                 //HTTP ERROR
                 if(typeof err.place === 'string') {
