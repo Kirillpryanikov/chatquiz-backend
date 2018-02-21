@@ -90,84 +90,127 @@ module.exports.controller = (socket) => {
                     return api.getUser(payload.userId);
                 },
                 function error(err) {
-                    console.log(">>>123", err.response.body.code);
+                    throw { place: 'session', body: err.response.body };
                 }
             )
-            .then(function (apiPayload) {
+            .then(
+                function success(apiPayload) {
 
-                socket.locals.user = {
-                    id: apiPayload.data.id,
-                    name: apiPayload.data.firstName + " " + apiPayload.data.lastName,
-                    imageUrl: apiPayload.data.imageUrl
-                };
+                    socket.locals.user = {
+                        id: apiPayload.data.id,
+                        name: apiPayload.data.firstName + " " + apiPayload.data.lastName,
+                        imageUrl: apiPayload.data.imageUrl
+                    };
 
-                return api.getList(payload.room);
-            })
-            .then(function (apiPayload) {
+                    return api.getList(payload.room);
 
-                let data = {};
+                },
+                function error(err) {
+                    throw { place: 'user', body: err.response.body };
+                }
+            )
+            .then(
+                function success (apiPayload) {
 
-                socket.locals.ownerId = apiPayload.data.userId;
+                    let data = {};
 
-                data.ownerId = apiPayload.data.userId;
-                data.user = socket.locals.user;
+                    socket.locals.ownerId = apiPayload.data.userId;
 
-                socket.join(payload.room);
-                logger.info("User joining room", { userId: payload.userId, room: payload.room });
+                    data.ownerId = apiPayload.data.userId;
+                    data.user = socket.locals.user;
 
-                socket.locals.room = payload.room;
+                    socket.join(payload.room);
+                    logger.info("User joining room", { userId: payload.userId, room: payload.room });
 
-                tools.room.getTopic(payload.room)
-                    .then(
-                        function success(topic) {
-                            if(topic) {
-                                socket.emit("topic_update", topic);
-                                logger.info('Sending topic', { room: payload.room, topic: topic });
+                    socket.locals.room = payload.room;
+
+                    tools.room.getTopic(payload.room)
+                        .then(
+                            function success(topic) {
+                                if(topic) {
+                                    socket.emit("topic_update", topic);
+                                    logger.info('Sending topic', { room: payload.room, topic: topic });
+                                }
                             }
-                        }
-                    );
+                        );
 
-                tools.message.getHistory(payload.room, payload.userId, 0)
-                    .then(
-                        function success(history) {
-                            socket.emit("history", history);
-                            logger.info("Sending history", { room: payload.room, history_length: history.length, page: 0 } );
-                            socket.emit("handshake", data);
-                        },
-                        function error() {
-                            logger.info("Error while getting room history", { room: payload.room } );
-                            socket.emit("handshake", data);
-                        }
-                    );
+                    tools.message.getHistory(payload.room, payload.userId, 0)
+                        .then(
+                            function success(history) {
+                                socket.emit("history", history);
+                                logger.info("Sending history", { room: payload.room, history_length: history.length, page: 0 } );
+                                socket.emit("handshake", data);
+                            },
+                            function error() {
+                                logger.info("Error while getting room history", { room: payload.room } );
+                                socket.emit("handshake", data);
+                            }
+                        );
 
-            })
+            },
+                function error(err) {
+                    throw { place: 'list', body: err.response.body };
+                }
+            )
             .catch(function (err) {
 
-                console.log(err.response.body);
 
-                if(err.response && err.response.body) {
+                //HTTP ERROR
+                if(typeof err.place === 'string') {
+
+
+                    switch(err.place) {
+
+                        case 'session':
+
+                            logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room, errorBody: err.body });
+                            socket.emit("chat_error", {
+                                code: 99,
+                                message: "Sessione scaduta"
+                            });
+
+                            break;
+
+                        case 'user':
+
+                            logger.info("User is not found in API", { userId: payload.userId, room: payload.room, errorBody: err.body });
+                            socket.emit("chat_error", {
+                                code: 99,
+                                message: "Sessione scaduta"
+                            });
+
+                            break;
+
+                        case 'list':
+
+                            logger.info("Dropping user for invalid channel", { userId: payload.userId, room: payload.room, errorBody: err.body });
+
+                            socket.emit("chat_error", {
+                                code: 98,
+                                message: "Canale non attivo o inesistente"
+                            });
+
+                            break;
+
+                    }
+
+                }
+                //APPLICATION ERROR
+                else {
+
+                    logger.error(err);
+
+                    socket.emit("chat_error", {
+                        code: 1,
+                        message: ""
+                    });
 
                 }
 
 
-                // logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room });
-                // socket.emit("chat_error", {
-                //     code: 99,
-                //     message: "Sessione scaduta"
-                // });
-                //
-                // socket.disconnect();
-                //
-                // if (err.response.body.code === 403 || err.response.body.code === 404) {
-                //     logger.info("Dropping user from invalid channel", { userId: payload.userId, room: payload.room });
-                //
-                //     socket.emit("chat_error", {
-                //         code: 98,
-                //         message: "Canale non attivo o inesistente"
-                //     });
-                // }
-                //
-                // socket.disconnect();
+
+                socket.disconnect();
+
 
             });
 
