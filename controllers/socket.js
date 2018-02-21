@@ -85,7 +85,10 @@ module.exports.controller = (socket) => {
 
 
         api.checkToken()
-            .then(function () {
+            .then(function (res) {
+
+                console.log(">>>", res.response.body.code);
+
                 return api.getUser(payload.userId);
             })
             .then(function (apiPayload) {
@@ -139,6 +142,10 @@ module.exports.controller = (socket) => {
             .catch(function (err) {
 
                 console.log(err.response.body);
+
+                if(err.response && err.response.body) {
+
+                }
 
 
                 // logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room });
