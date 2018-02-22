@@ -161,7 +161,7 @@ module.exports.controller = (socket) => {
 
                         case 'check-token':
 
-                            logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room, errorBody: err.body });
+                            logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room, errorMessage: err.message });
                             socket.emit("chat_error", {
                                 code: 99,
                                 message: "Sessione scaduta"
@@ -171,7 +171,7 @@ module.exports.controller = (socket) => {
 
                         case 'user':
 
-                            logger.info("User is not found in API", { userId: payload.userId, room: payload.room, errorBody: err.body });
+                            logger.info("User is not found in API", { userId: payload.userId, room: payload.room, errorMessage: err.message });
                             socket.emit("chat_error", {
                                 code: 99,
                                 message: "Sessione scaduta"
@@ -181,7 +181,7 @@ module.exports.controller = (socket) => {
 
                         case 'list':
 
-                            logger.info("Dropping user for invalid channel", { userId: payload.userId, room: payload.room, errorBody: err.body });
+                            logger.info("Dropping user for invalid channel", { userId: payload.userId, room: payload.room, errorMessage: err.message });
 
                             socket.emit("chat_error", {
                                 code: 98,
@@ -207,7 +207,6 @@ module.exports.controller = (socket) => {
                 }
 
                 socket.disconnect();
-
 
             });
 

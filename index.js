@@ -1,11 +1,12 @@
 require("dotenv").config();
 
-const logger    = require('./utils/logger');
-const express   = require("express");
-const http      = require("http");
-const cors      = require("cors");
-const socketIO  = require("socket.io");
-const process   = require("process");
+const logger        = require('./utils/logger');
+const express       = require("express");
+const http          = require("http");
+const cors          = require("cors");
+const socketIO      = require("socket.io");
+const process       = require("process");
+const bodyParser    = require("body-parser");
 
 
 const apiProxyController        = require('./controllers/api-proxy');
@@ -25,6 +26,7 @@ process.title = "chatMicroS";
 app.use(require('morgan')("combined", { "stream": logger.stream }));
 app.use(cors());
 
+app.use(bodyParser.json({limit: '50mb'}));
 
 app.use('/apiproxy', apiProxyController);
 app.get("/download_history/:room", downloadHistoryController);
