@@ -5,6 +5,8 @@ const path              = require('path');
 const dateformat        = require('dateformat');
 const fs                = require('fs');
 const Datastore         = require('nedb-promises');
+const pmx               = require('./utils/keymetrics');
+const logger            = require('./utils/logger');
 
 const HISTORY_MAX_SIZE  = parseInt(process.env.HISTORY_MAX_SIZE);
 
@@ -13,6 +15,29 @@ if (!fs.existsSync('./databases'))
 
 let rooms    = new Datastore({ filename: './databases/rooms.db', autoload: true}) ,
     messages = new Datastore({ filename: './databases/messages.db', autoload: true});
+
+
+const probe             = pmx.probe();
+const dbProbe  = probe.metric({
+    name    : 'Database file size'
+});
+
+
+const dbFileSize = () => {
+    try {
+        const statsRooms = fs.statSync("databases/rooms.db");
+        const statsMessages = fs.statSync("databases/messages.db");
+        const size = statsRooms.size + statsMessages.size;
+        dbProbe.set(size);
+        logger.info("DB file size calculated", { size: size });
+    } catch(e) {
+        logger.error("Error while calculating db file size", { error: e });
+    }
+};
+
+setInterval(dbFileSize, 60000);
+
+dbFileSize();
 
 module.exports = {
     message: {
@@ -94,7 +119,7 @@ module.exports = {
                                         }
                                     );
                             }
-                        );
+                        ).catch(reject);
 
                 }
                 catch (e) {
