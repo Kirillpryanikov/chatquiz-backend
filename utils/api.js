@@ -4,7 +4,6 @@ const process = require("process");
 const url     = process.env.GW_API_URL;
 const app_key = process.env.GW_APP_KEY;
 
-let token;
 
 class ApiError extends Error {
 
@@ -16,45 +15,54 @@ class ApiError extends Error {
 
 };
 
-const optionGen = function (endpoint) {
-    return {
-        uri: url + endpoint,
-        headers: {
-            "User-Agent": "Request-Promise",
-            "x-app-key": app_key,
-            "x-auth-token": token
-        },
-        json: true
-    }
-};
 
-module.exports = {
+let ApiClass = function () {
 
-    setToken: function (_token) {
-        token = _token;
-    },
+    let _self = this;
+    let token;
 
-    checkToken: function () {
+    const optionGen = function (endpoint) {
+        return {
+            uri: url + endpoint,
+            headers: {
+                "User-Agent": "Request-Promise",
+                "x-app-key": app_key,
+                "x-auth-token": token
+            },
+            json: true
+        }
+    };
+
+    _self.token = function (t) {
+        token = t;
+        return _self;
+    };
+
+    _self.checkToken = function () {
         return rp(optionGen("/check-token/")).catch(err => Promise.reject(new ApiError('check-token',  err.response.body.message)));
-    },
+    };
 
-    getUser: function (userId) {
+    _self.getUser = function (userId) {
         return rp(optionGen(`/user/${userId}/`)).catch(err => Promise.reject(new ApiError('user', err.response.body.message)));
-    },
+    };
 
-    getList: function (listId) {
+    _self.getList = function (listId) {
         return rp(optionGen(`/list/${listId}/`)).catch(err => Promise.reject(new ApiError('list', err.response.body.message)));
-    },
+    };
 
-    uploadImage: function (options) {
-        var httpOptions = optionGen(`/list/${options.room}/chat-image-upload/`);
+    _self.getLists = function (userId) {
+        return rp(optionGen(`/user/${userId}/list/`)).catch(err => Promise.reject(new ApiError('list', err.response.body.message)));
+    };
+
+    _self.uploadImage = function (options) {
+        let httpOptions = optionGen(`/list/${options.room}/chat-image-upload/`);
         delete httpOptions.json;
         httpOptions.method = 'POST';
         httpOptions.formData = options.formData;
         return rp(httpOptions).catch(err => Promise.reject(new ApiError('upload-image', err.response.body.message)));
-    },
+    };
 
-    errorParser: function (e) {
+    _self.errorParser = function (e) {
         try {
             const response = JSON.parse(e.response.body).message;
 
@@ -81,3 +89,6 @@ module.exports = {
         }
     }
 };
+
+
+module.exports = new ApiClass();

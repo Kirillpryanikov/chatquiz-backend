@@ -7,6 +7,7 @@ const dateformat        = require("dateformat");
 const pmx               = require('../utils/keymetrics');
 const topicSchema       = require('../schema/topic');
 const handshakeSchema   = require('../schema/handshake');
+const sanitizeHtml      = require('sanitize-html');
 
 const tmpDirectory = './tmp';
 
@@ -79,19 +80,16 @@ module.exports.controller = (socket) => {
         }
 
 
-        socket.locals = {};
+        socket.locals = {
+            token: payload.token
+        };
 
-        api.setToken(payload.token);
 
-
-        api.checkToken()
+        api.token(socket.locals.token).checkToken()
             .then(
                 function success() {
-                    return api.getUser(payload.userId);
+                    return api.token(socket.locals.token).getUser(payload.userId);
                 }
-                // function error(err) {
-                //     throw new Error({ place: 'session', body: err.response.body });
-                // }
             )
             .then(
                 function success(apiPayload) {
@@ -102,12 +100,9 @@ module.exports.controller = (socket) => {
                         imageUrl: apiPayload.data.imageUrl
                     };
 
-                    return api.getList(payload.room);
+                    return api.token(socket.locals.token).getList(payload.room);
 
                 }
-                // function error(err) {
-                //     throw new Error({ place: 'user', body: err.response.body });
-                // }
             )
             .then(
                 function success (apiPayload) {
@@ -119,38 +114,38 @@ module.exports.controller = (socket) => {
                     data.ownerId = apiPayload.data.userId;
                     data.user = socket.locals.user;
 
-                    socket.join(payload.room);
-                    logger.info("User joining room", { userId: payload.userId, room: payload.room });
+                    socket.locals.room = apiPayload.data.id;
 
-                    socket.locals.room = payload.room;
+                    socket.join(apiPayload.data.id);
+                    logger.info("User joining room", { userId: payload.userId, room: socket.locals.room });
 
-                    tools.room.getTopic(payload.room)
+
+
+                    tools.room.getTopic(socket.locals.room)
                         .then(
                             function success(topic) {
                                 if(topic) {
                                     socket.emit("topic_update", topic);
-                                    logger.info('Sending topic', { room: payload.room, topic: topic });
+                                    logger.info('Sending topic', { room: socket.locals.room, topic: topic });
                                 }
                             }
                         );
 
-                    tools.message.getHistory(payload.room, payload.userId, 0)
+                    tools.message.getHistory(socket.locals.room, payload.userId, 0)
                         .then(
                             function success(history) {
                                 socket.emit("history", history);
-                                logger.info("Sending history", { room: payload.room, history_length: history.length, page: 0 } );
+                                logger.info("Sending history", { room: socket.locals.room, history_length: history.length, page: 0 } );
                                 socket.emit("handshake", data);
                             },
-                            function error() {
-                                logger.info("Error while getting room history", { room: payload.room } );
+                            function error(e) {
+                                console.log(e);
+                                logger.error("Error while getting room history", { room: socket.locals.room, error: e } );
                                 socket.emit("handshake", data);
                             }
                         );
 
             }
-                // function error(err) {
-                //     throw new Error({ place: 'list', body: err.response.body });
-                // }
             )
             .catch(function (err) {
 
@@ -161,7 +156,7 @@ module.exports.controller = (socket) => {
 
                         case 'check-token':
 
-                            logger.info("Dropping user for expired session", { userId: payload.userId, room: payload.room, errorMessage: err.message });
+                            logger.info("Dropping user for expired session", { userId: payload.userId, room: socket.locals.room || payload.room, errorMessage: err.message });
                             socket.emit("chat_error", {
                                 code: 99,
                                 message: "Sessione scaduta"
@@ -171,7 +166,7 @@ module.exports.controller = (socket) => {
 
                         case 'user':
 
-                            logger.info("User is not found in API", { userId: payload.userId, room: payload.room, errorMessage: err.message });
+                            logger.info("User is not found in API", { userId: payload.userId, room: socket.locals.room || payload.room, errorMessage: err.message });
                             socket.emit("chat_error", {
                                 code: 99,
                                 message: "Sessione scaduta"
@@ -181,7 +176,7 @@ module.exports.controller = (socket) => {
 
                         case 'list':
 
-                            logger.info("Dropping user for invalid channel", { userId: payload.userId, room: payload.room, errorMessage: err.message });
+                            logger.info("Dropping user for invalid channel", { userId: payload.userId, room: socket.locals.room || payload.room, errorMessage: err.message });
 
                             socket.emit("chat_error", {
                                 code: 98,
@@ -215,24 +210,22 @@ module.exports.controller = (socket) => {
         socket.on("message", data => {
 
             let messageBlock = {};
-            messageBlock.message = data;
+            messageBlock.message = sanitizeHtml(data, { allowedTags: [], allowedAttributes: [] });
+
             messageBlock.from = socket.locals.user;
             messageBlock.time = new Date();
             messageBlock.room = socket.locals.room;
             messageBlock.likes = [];
 
-            //data.topic && tools.room.set_topic(room.room, data.topic).then(resp => msg.topic = resp);
-
 
             tools.message.setMessage(messageBlock)
                 .then(function (resp) {
 
-                    messageBlock.msg_id = resp;
-                    messageBlock.time = dateformat(messageBlock.time, "HH:MM");
+                    messageBlock.id = resp._id;
 
                     io.sockets.in(socket.locals.room).emit("message", messageBlock);
 
-                    logger.info("New message", messageBlock);
+                    logger.info("New message", { id: resp._id.toString(), room: socket.locals.room, userId: socket.locals.user.id});
                 });
         });
 
@@ -268,18 +261,19 @@ module.exports.controller = (socket) => {
 
         socket.on("like", msgId => {
 
+            logger.info("New Like request", { messageId: msgId, room: socket.locals.room, user: socket.locals.user.id });
+
             tools.message.setLike(
                 {
-                    message_id: msgId,
+                    id: msgId,
                     user_id: socket.locals.user.id
                 })
                 .then(
                     function success(resp) {
                         io.sockets.in(socket.locals.room).emit("like", resp);
-                        logger.info("Like save", { message_id: msgId, room: socket.locals.room, user: socket.locals.user.id })
                     },
                     function error() {
-                        logger.error("Error saving like", { message_id: msgId, room: socket.locals.room, user: socket.locals.user.id });
+                        logger.error("Error saving like", { messageId: msgId, room: socket.locals.room, user: socket.locals.user.id });
                     }
                 );
 
@@ -307,7 +301,7 @@ module.exports.controller = (socket) => {
                     }
 
 
-                    api.uploadImage({
+                    api.token(socket.locals.token).uploadImage({
                         room: socket.locals.room,
                         formData: {
                             file: {
@@ -332,16 +326,14 @@ module.exports.controller = (socket) => {
 
                             tools.message.setMessage(messageBlock)
                                 .then(function (resp) {
-                                    messageBlock.msg_id = resp;
-                                    messageBlock.time = dateformat(messageBlock.time, "HH:MM");
+                                    messageBlock.id = resp._id;
 
                                     io.sockets.in(socket.locals.room).emit("image", messageBlock);
+                                    logger.info("New image uploaded", { id: resp.id.toString(), room: socket.locals.room, userId: socket.locals.user.id, url: image.data.imageUrl});
 
                                 });
 
                             fs.unlink(fileLocation, () => {});
-
-                            logger.info("New image uploaded", { userId: socket.locals.user.id, room: socket.locals.room, url: image.data.imageUrl });
 
                         }
                     )
@@ -356,7 +348,9 @@ module.exports.controller = (socket) => {
                                 message: "Tentativo di caricamento dell'immagine fallito: " + message || "Errore durante il caricamento dell'immagine, i nostri tecnici sono stati notificati"
                             });
 
-                            logger.error("Error uploading image", { userId: socket.locals.user.id, room: socket.locals.room, message: message });
+                            console.log(e);
+
+                            logger.error("Error uploading image", { userId: socket.locals.user.id, room: socket.locals.room, error: e });
                         });
 
 
@@ -367,14 +361,14 @@ module.exports.controller = (socket) => {
 
         socket.on("load_history", data => {
 
-            tools.message.getHistory(payload.room, payload.userId, data.page)
+            tools.message.getHistory(socket.locals.room, payload.userId, data.page)
                 .then(
                     function success(history) {
                         socket.emit("history", history);
-                        logger.info("Sending history", { room: payload.room, history_length: history.length, page: data.page } );
+                        logger.info("Sending history", { room: socket.locals.room, history_length: history.length, page: data.page } );
                     },
-                    function error() {
-                        logger.info("Error while getting room history", { room: payload.room } );
+                    function error(e) {
+                        logger.info("Error while getting room history", { room: socket.locals.room, error: e } );
 
                     }
                 );

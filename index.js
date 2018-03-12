@@ -8,7 +8,6 @@ const socketIO      = require("socket.io");
 const process       = require("process");
 const bodyParser    = require("body-parser");
 
-
 const apiProxyController        = require('./controllers/api-proxy');
 const downloadHistoryController = require('./controllers/download-history');
 const socketModule              = require('./controllers/socket');

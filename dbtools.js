@@ -1,43 +1,25 @@
 'use strict';
 require('dotenv').config();
 
-const path              = require('path');
-const dateformat        = require('dateformat');
 const fs                = require('fs');
-const Datastore         = require('nedb-promises');
-const pmx               = require('./utils/keymetrics');
 const logger            = require('./utils/logger');
+const MongoClient       = require('mongodb').MongoClient;
+const ObjectId          = require('mongodb').ObjectID;
 
 const HISTORY_MAX_SIZE  = parseInt(process.env.HISTORY_MAX_SIZE);
 
 if (!fs.existsSync('./databases'))
     fs.mkdirSync('./databases');
 
-let rooms    = new Datastore({ filename: './databases/rooms.db', autoload: true}) ,
-    messages = new Datastore({ filename: './databases/messages.db', autoload: true});
+let messages;
+let rooms;
 
+MongoClient.connect(process.env.MONGO_SERVER, function(err, client) {
+    messages = client.db('chat').collection('messages');
+    rooms    = client.db('chat').collection('rooms');
 
-const probe             = pmx.probe();
-const dbProbe  = probe.metric({
-    name    : 'Database file size'
+    logger.info("Connected successfully to MongoDB server");
 });
-
-
-const dbFileSize = () => {
-    try {
-        const statsRooms = fs.statSync("databases/rooms.db");
-        const statsMessages = fs.statSync("databases/messages.db");
-        const size = statsRooms.size + statsMessages.size;
-        dbProbe.set(size);
-        logger.info("DB file size calculated", { size: size });
-    } catch(e) {
-        logger.error("Error while calculating db file size", { error: e });
-    }
-};
-
-setInterval(dbFileSize, 60000);
-
-dbFileSize();
 
 module.exports = {
     message: {
@@ -57,15 +39,15 @@ module.exports = {
                         .skip(skip)
                         .limit(limit)
                         .sort({ time: -1, _id: -1})
-                        .then(
-                            (records) => {
+                        .toArray(
+                            (err, records) => {
 
                                 let msgs = records.map( el => {
                                     let msg = {
                                         message: el.message,
-                                        msg_id: el._id,
+                                        id: el._id,
                                         likes: el.likes.length,
-                                        time: dateformat(new Date(el.time), "HH:MM"),
+                                        time: el.time,
                                         from: el.from,
                                         image: el.image
                                     };
@@ -84,7 +66,7 @@ module.exports = {
 
                             });
                 } catch (e) {
-                    reject([]);
+                    reject(e);
                 }
             });
 
@@ -93,33 +75,39 @@ module.exports = {
             return new Promise((resolve, reject) => {
                 try {
 
-                    messages.count({ 'room': data.room })
-                        .then(
-                            countOfMsg => {
+                    messages.count({ 'room': data.room }, (err, countOfMsg) => {
 
-                                if (countOfMsg > HISTORY_MAX_SIZE) {
+                        if(err) {
+                            reject(err);
+                            return;
+                        }
 
-                                    let difference = Math.abs(countOfMsg - HISTORY_MAX_SIZE);
+                        if (countOfMsg > HISTORY_MAX_SIZE) {
 
-                                    messages.find({ 'room': data.room }).sort({time: 1, _id: -1}).limit(difference)
-                                        .then(
-                                            all_msgs => {
-                                                for (let i = 0; i < all_msgs.length; i++) {
-                                                    messages.remove({'_id': all_msgs[i]._id});
-                                                }
-                                            }
-                                        );
+                            let difference = Math.abs(countOfMsg - HISTORY_MAX_SIZE);
 
-                                }
-
-                                messages.insert(data)
-                                    .then(
-                                        message => {
-                                            resolve(message._id);
+                            messages.find({ 'room': data.room }).sort({time: 1, _id: -1}).limit(difference)
+                                .then(
+                                    all_msgs => {
+                                        for (let i = 0; i < all_msgs.length; i++) {
+                                            messages.remove({'_id': all_msgs[i]._id});
                                         }
-                                    );
+                                    }
+                                );
+
+                        }
+
+                        messages.insertOne(data, (err, message) => {
+
+                            if(err) {
+                                reject(err);
+                                return;
                             }
-                        ).catch(reject);
+
+                            resolve(message.ops[0]);
+                        });
+                    })
+
 
                 }
                 catch (e) {
@@ -130,54 +118,53 @@ module.exports = {
         setLike: (data) => {
             return new Promise((resolve, reject) => {
 
-                if (!data.message_id)
+                if (!data.id)
                 {
                     reject();
                     return;
                 }
 
                 try {
-                    messages.findOne({_id: data.message_id})
-                        .then(
-                            message => {
+                    messages.findOne({_id: new ObjectId(data.id)}, (err, message) => {
 
-                                if (message && message.likes.length > 0) {
+                        if(err) {
+                            reject(err);
+                            return;
+                        }
 
-                                    message.likes.find( (e, i, array) => {
 
-                                        if (e && e.user === data.user_id) {
-                                            message.likes.splice(i, 1);
-                                        } else {
-                                            if (!array[i + 1]) {
-                                                message.likes.push({ user: data.user_id });
-                                            }
-                                        }
-                                    });
+                        if (message && message.likes.length > 0) {
 
+                            message.likes.find( (e, i, array) => {
+
+                                if (e && e.user === data.user_id) {
+                                    message.likes.splice(i, 1);
                                 } else {
-                                    message.likes.push({ user: data.user_id });
+                                    if (!array[i + 1]) {
+                                        message.likes.push({ user: data.user_id });
+                                    }
                                 }
+                            });
+
+                        } else {
+                            message.likes.push({ user: data.user_id });
+                        }
 
 
-                                messages.update({_id: data.message_id}, message);
+                        messages.updateOne({_id: new ObjectId(data.id)}, message);
 
-                                let result = {
-                                    message_id: data.message_id,
-                                    count: message.likes.length,
-                                    user_id: data.user_id
-                                };
+                        let result = {
+                            id: data.id,
+                            count: message.likes.length,
+                            user_id: data.user_id
+                        };
 
-                                resolve(result);
+                        resolve(result);
 
-
-                            }
-                        )
-                        .catch(
-                            e => reject()
-                        )
+                    })
                 }
                 catch (e) {
-                    reject();
+                    reject(e);
                 }
 
 
@@ -187,11 +174,16 @@ module.exports = {
 
             return new Promise((resolve, reject) => {
 
-                messages.find({'room': room}).sort({ time: -1, _id: -1})
-                    .then(response => {
-                        resolve(response);
-                    })
-                    .catch((e) => reject(e))
+                messages.find({'room': room}).sort({ time: -1, _id: -1}, (err, response) => {
+
+                    if(err) {
+                        reject(err);
+                        return;
+                    }
+
+                    resolve(response.toArray());
+                })
+
 
             })
 
@@ -203,22 +195,24 @@ module.exports = {
             return new Promise((resolve, reject) => {
 
                 try {
-                    rooms.findOne({ room_id: roomId })
-                        .then((room) => {
+                    rooms.findOne({ room_id: roomId }, (err, room) => {
 
-                            if (!room) {
-                                rooms.insert({room_id: roomId, topic: ''});
-                                resolve(null);
-                            }
-                            else
-                                resolve(room.topic);
+                        if(err) {
+                            reject(err);
+                            return;
+                        }
 
-                        });
+                        if (!room) {
+                            rooms.insertOne({room_id: roomId, topic: ''});
+                            resolve(null);
+                        }
+                        else
+                            resolve(room.topic);
 
+                    })
 
                 } catch (e) {
-                    console.log('Err: ', e);
-                    reject();
+                    reject(e);
                 }
 
             });
@@ -233,15 +227,15 @@ module.exports = {
 
                     const _topic = topic.substring(0, parseInt(process.env.TOPIC_LENGTH));
 
-                    rooms.update({ room_id: room }, { topic: _topic, room_id: room }, { upsert: true })
-                        .then(
-                            () => {
-                                resolve(_topic);
-                            }
-                        )
-                        .catch(
-                            reject
-                        )
+                    rooms.updateOne({ room_id: room }, { topic: _topic, room_id: room }, { upsert: true }, (err, response) => {
+
+                        if(err) {
+                            reject(err);
+                            return;
+                        }
+
+                        resolve(_topic);
+                    });
 
                 }
                 catch (e) {
