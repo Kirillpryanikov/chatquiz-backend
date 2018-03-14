@@ -1,15 +1,11 @@
 'use strict';
 require('dotenv').config();
 
-const fs                = require('fs');
 const logger            = require('./utils/logger');
 const MongoClient       = require('mongodb').MongoClient;
 const ObjectId          = require('mongodb').ObjectID;
 
 const HISTORY_MAX_SIZE  = parseInt(process.env.HISTORY_MAX_SIZE);
-
-if (!fs.existsSync('./databases'))
-    fs.mkdirSync('./databases');
 
 let messages;
 let rooms;

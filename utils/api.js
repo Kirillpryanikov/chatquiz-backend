@@ -55,7 +55,7 @@ let ApiClass = function () {
     };
 
     _self.uploadImage = function (options) {
-        let httpOptions = optionGen(`/list/${options.room}/chat-image-upload/`);
+        let httpOptions = optionGen(`/wallet/${options.room}/user-image-upload/`);
         delete httpOptions.json;
         httpOptions.method = 'POST';
         httpOptions.formData = options.formData;

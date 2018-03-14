@@ -12,7 +12,20 @@
       "GW_TOPIC_LENGTH": 15,
       "HISTORY_LIMIT": 10,
       "HISTORY_MAX_SIZE": 600,
-      "TOPIC_LENGTH": 250
+      "TOPIC_LENGTH": 250,
+      "MONGO_SERVER": "mongodb://db-admin:Tp4ePd9LoqzmIjNy@freetest-shard-00-00-pkgdj.mongodb.net:27017,freetest-shard-00-01-pkgdj.mongodb.net:27017,freetest-shard-00-02-pkgdj.mongodb.net:27017/test?ssl=true&replicaSet=freeTest-shard-0&authSource=admin"
+    },
+    "staging": {
+      "NODE_ENV": "development",
+      "GW_SERVER_PORT": 8086,
+      "GW_API_PROXY_URL": "/apiproxy/v1",
+      "GW_API_URL": "https://apidev.growish.com/v1",
+      "GW_APP_KEY": "1234567890",
+      "GW_TOPIC_LENGTH": 15,
+      "HISTORY_LIMIT": 10,
+      "HISTORY_MAX_SIZE": 600,
+      "TOPIC_LENGTH": 250,
+      "MONGO_SERVER": "127.0.0.1:27017/chat"
     },
     "env_production" : {
       "NODE_ENV": "production",
@@ -23,7 +36,8 @@
       "GW_TOPIC_LENGTH": 15,
       "HISTORY_LIMIT": 10,
       "HISTORY_MAX_SIZE": 600,
-      "TOPIC_LENGTH": 250
+      "TOPIC_LENGTH": 250,
+      "MONGO_SERVER": "127.0.0.1:27017/chat"
     }
   }]
 } 

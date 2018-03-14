@@ -3,11 +3,12 @@ const Joi               = require('joi');
 const logger            = require("../utils/logger");
 const api               = require('../utils/api');
 const fs                = require("fs");
-const dateformat        = require("dateformat");
 const pmx               = require('../utils/keymetrics');
 const topicSchema       = require('../schema/topic');
 const handshakeSchema   = require('../schema/handshake');
 const sanitizeHtml      = require('sanitize-html');
+const process           = require("process");
+
 
 const tmpDirectory = './tmp';
 
@@ -106,6 +107,19 @@ module.exports.controller = (socket) => {
             )
             .then(
                 function success (apiPayload) {
+
+
+                    if(process.env.NODE_ENV === 'production' && typeof apiPayload.data.chatState !== 'undefined' && apiPayload.data.chatState === 0) {
+                        logger.info("Chat service not active for this list", { userId: payload.userId, room: socket.locals.room });
+                        socket.emit("chat_error", {
+                            code: 97,
+                            message: "Il servizio non è attivo su questa lista"
+                        });
+
+                        socket.disconnect();
+                        return;
+                    }
+
 
                     let data = {};
 
@@ -341,16 +355,15 @@ module.exports.controller = (socket) => {
 
                             fs.unlink(fileLocation, () => {});
 
-                            var message = api.errorParser(e);
+                            var message = api.errorParser(e) || "Errore durante il caricamento dell'immagine, i nostri tecnici sono stati notificati";
 
                             socket.emit("chat_error", {
                                 code: 100,
-                                message: "Tentativo di caricamento dell'immagine fallito: " + message || "Errore durante il caricamento dell'immagine, i nostri tecnici sono stati notificati"
+                                message: "Tentativo di caricamento dell'immagine fallito: " + message
                             });
 
-                            console.log(e);
 
-                            logger.error("Error uploading image", { userId: socket.locals.user.id, room: socket.locals.room, error: e });
+                            logger.error("Error uploading image", { userId: socket.locals.user.id, room: socket.locals.room, error: message });
                         });
 
 
