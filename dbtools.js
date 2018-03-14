@@ -11,7 +11,15 @@ const HISTORY_MAX_SIZE  = parseInt(process.env.HISTORY_MAX_SIZE);
 let messages;
 let rooms;
 
+logger.info("Connecting to DB", { server: process.env.MONGO_SERVER });
+
 MongoClient.connect(process.env.MONGO_SERVER, function(err, client) {
+
+    if(err) {
+        logger.error("Can't connect to DB", {error: err});
+        throw 'DB CONNECTION ERROR';
+    }
+
     messages = client.db('chat').collection('messages');
     rooms    = client.db('chat').collection('rooms');
 
