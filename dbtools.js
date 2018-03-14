@@ -1,5 +1,6 @@
 'use strict';
-require('dotenv').config();
+
+const process           = require("process");
 
 const logger            = require('./utils/logger');
 const MongoClient       = require('mongodb').MongoClient;
