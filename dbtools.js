@@ -5,7 +5,9 @@ const process           = require("process");
 const logger            = require('./utils/logger');
 const MongoClient       = require('mongodb').MongoClient;
 const ObjectId          = require('mongodb').ObjectID;
+const Joi               = require('joi');
 
+const roomConfigSchema  = require('./schema/roomConfig');
 const HISTORY_MAX_SIZE  = parseInt(process.env.HISTORY_MAX_SIZE);
 
 let messages;
@@ -27,6 +29,30 @@ MongoClient.connect(process.env.MONGO_SERVER, function(err, client) {
 });
 
 module.exports = {
+    user: {
+        get: (userId, room) => {
+
+            return new Promise((resolve, reject) => {
+
+                messages.find({room: room, "from.id": userId}).sort({ time: -1 }).limit(1).toArray((err, messages) => {
+
+                    if(err) {
+                        reject(err);
+                        return;
+                    }
+
+                    if(messages.length <= 0) {
+                        reject(null);
+                        return;
+                    }
+
+                    resolve(messages[0].from);
+
+                });
+
+            });
+        }
+    },
     message: {
         getHistory: (room, user_id, page) => {
             return new Promise((resolve, reject) => {
@@ -208,7 +234,6 @@ module.exports = {
                         }
 
                         if (!room) {
-                            rooms.insertOne({room_id: roomId, topic: ''});
                             resolve(null);
                         }
                         else
@@ -247,6 +272,79 @@ module.exports = {
                     reject();
                 }
 
+            });
+
+        },
+        get: (room) => {
+
+            return new Promise((resolve, reject) => {
+
+                try {
+                    rooms.findOne({ room_id: room }, (err, roomFromDb) => {
+
+                        if(err) {
+                            reject(err);
+                            return;
+                        }
+
+                        if (!roomFromDb) {
+                            rooms.insertOne({room_id: room, topic: '', config: { allowAnonymous: true }}, (err, _room) => {
+
+                                if(err) {
+                                    reject(err);
+                                    return;
+                                }
+
+                                resolve(_room.ops[0]);
+                            });
+
+                        }
+                        else
+                            resolve(roomFromDb);
+
+                    });
+
+                } catch (e) {
+                    reject(e);
+                }
+
+            });
+
+        },
+        setConfig: (room, config) => {
+
+            return new Promise((resolve, reject) => {
+
+                try {
+
+                    const validation = Joi.validate(config, roomConfigSchema);
+
+                    if(validation.error) {
+                        logger.error("Error while setting room options", {
+                            validation_err: validation.message
+                        });
+                        return false;
+                    }
+
+
+                    rooms.updateOne({ room_id: room }, config, { upsert: true }, (err, response) => {
+
+                        if(err) {
+                            reject(err);
+                            return;
+                        }
+
+                        resolve(response);
+                    });
+
+
+                }
+                catch (e) {
+                    logger.error("Error while setting room options", {
+                        error: e
+                    });
+                    reject(e);
+                }
             });
 
         }

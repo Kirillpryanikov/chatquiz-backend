@@ -1,5 +1,6 @@
-const rp      = require("request-promise");
-const process = require("process");
+const _rp       = require("request-promise");
+const process   = require("process");
+const logger    = require("../utils/logger");
 
 const url     = process.env.GW_API_URL;
 const app_key = process.env.GW_APP_KEY;
@@ -15,6 +16,14 @@ class ApiError extends Error {
 
 };
 
+const rp = function (params) {
+
+    let cleanParams = JSON.parse(JSON.stringify(params));
+    cleanParams['headers']['x-auth-token'] = typeof cleanParams['headers']['x-auth-token'] !== 'undefined' ? 'obfuscated' : '';
+    logger.info('Http request', cleanParams);
+
+    return _rp(params);
+};
 
 let ApiClass = function () {
 
@@ -22,15 +31,20 @@ let ApiClass = function () {
     let token;
 
     const optionGen = function (endpoint) {
-        return {
+
+        let options = {
             uri: url + endpoint,
             headers: {
                 "User-Agent": "Request-Promise",
-                "x-app-key": app_key,
-                "x-auth-token": token
+                "x-app-key": app_key
             },
             json: true
-        }
+        };
+
+        if(token)
+            options['headers']["x-auth-token"] = token;
+
+        return options;
     };
 
     _self.token = function (t) {

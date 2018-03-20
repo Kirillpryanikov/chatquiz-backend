@@ -4,11 +4,13 @@ const logger            = require("../utils/logger");
 const api               = require('../utils/api');
 const fs                = require("fs");
 const pmx               = require('../utils/keymetrics');
-const topicSchema       = require('../schema/topic');
-const handshakeSchema   = require('../schema/handshake');
 const sanitizeHtml      = require('sanitize-html');
 const process           = require("process");
 
+
+const topicSchema       = require('../schema/topic');
+const handshakeSchema   = require('../schema/handshake');
+const nicknameSchema   = require('../schema/nickname');
 
 const tmpDirectory = './tmp';
 
@@ -27,6 +29,60 @@ const refreshConnectionsProbe = () => {
             connectionsProbe.set(clients.length);
         }
     });
+};
+
+const authorizeUserConnection = (list, socket) => {
+
+
+    if(process.env.NODE_ENV === 'production' && typeof list.data.chatState !== 'undefined' && list.data.chatState === 0) {
+        logger.info("Chat service not active for this list", { userId: socket.locals.user.id, room: socket.locals.room });
+        socket.emit("chat_error", {
+            code: 97,
+            message: "Il servizio non è attivo su questa lista"
+        });
+
+        socket.disconnect();
+        return;
+    }
+
+
+    let data = {};
+
+    socket.locals.ownerId = list.data.userId;
+
+    data.ownerId = list.data.userId;
+    data.user = socket.locals.user;
+
+    socket.locals.room = list.data.id;
+
+    socket.join(list.data.id);
+    logger.info("User joining room", { userId: socket.locals.user.id, room: socket.locals.room });
+
+
+
+    tools.room.getTopic(socket.locals.room)
+        .then(
+            function success(topic) {
+                if(topic) {
+                    socket.emit("topic_update", topic);
+                    logger.info('Sending topic', { room: socket.locals.room, topic: topic });
+                }
+            }
+        );
+
+    tools.message.getHistory(socket.locals.room, socket.locals.user.id, 0)
+        .then(
+            function success(history) {
+                socket.emit("history", history);
+                logger.info("Sending history", { room: socket.locals.room, history_length: history.length, page: 0 } );
+                socket.emit("handshake", data);
+            },
+            function error(e) {
+                logger.error("Error while getting room history", { room: socket.locals.room, error: e } );
+                socket.emit("handshake", data);
+            }
+        );
+
 };
 
 module.exports.setIO = function (_io) {
@@ -73,151 +129,195 @@ module.exports.controller = (socket) => {
         clearTimeout(handshakeTimer);
 
         const validation = Joi.validate(payload, handshakeSchema);
+
         if(validation.error) {
             logger.error("Error while handshaking", {
-                validation_err: validation.message
+                validation_err: validation.error.message
             });
+            socket.disconnect();
             return false;
         }
 
 
-        socket.locals = {
-            token: payload.token
-        };
+        tools.room.get(payload.room).then(
+            function success(room) {
 
+                //NON ANONYMOUS USER
+                if(payload.token) {
 
-        api.token(socket.locals.token).checkToken()
-            .then(
-                function success() {
-                    return api.token(socket.locals.token).getUser(payload.userId);
-                }
-            )
-            .then(
-                function success(apiPayload) {
-
-                    socket.locals.user = {
-                        id: apiPayload.data.id,
-                        name: apiPayload.data.firstName + " " + apiPayload.data.lastName,
-                        imageUrl: apiPayload.data.imageUrl
+                    socket.locals = {
+                        token: payload.token
                     };
 
-                    return api.token(socket.locals.token).getList(payload.room);
 
-                }
-            )
-            .then(
-                function success (apiPayload) {
-
-
-                    if(process.env.NODE_ENV === 'production' && typeof apiPayload.data.chatState !== 'undefined' && apiPayload.data.chatState === 0) {
-                        logger.info("Chat service not active for this list", { userId: payload.userId, room: socket.locals.room });
-                        socket.emit("chat_error", {
-                            code: 97,
-                            message: "Il servizio non è attivo su questa lista"
-                        });
-
-                        socket.disconnect();
-                        return;
-                    }
-
-
-                    let data = {};
-
-                    socket.locals.ownerId = apiPayload.data.userId;
-
-                    data.ownerId = apiPayload.data.userId;
-                    data.user = socket.locals.user;
-
-                    socket.locals.room = apiPayload.data.id;
-
-                    socket.join(apiPayload.data.id);
-                    logger.info("User joining room", { userId: payload.userId, room: socket.locals.room });
-
-
-
-                    tools.room.getTopic(socket.locals.room)
+                    api.token(socket.locals.token).checkToken()
                         .then(
-                            function success(topic) {
-                                if(topic) {
-                                    socket.emit("topic_update", topic);
-                                    logger.info('Sending topic', { room: socket.locals.room, topic: topic });
+                            function success() {
+                                return api.token(socket.locals.token).getUser(payload.userId);
+                            }
+                        )
+                        .then(
+                            function success(apiPayload) {
+
+                                socket.locals.user = {
+                                    id: apiPayload.data.id,
+                                    name: apiPayload.data.firstName + " " + apiPayload.data.lastName,
+                                    imageUrl: apiPayload.data.imageUrl,
+                                    anonymous: false
+                                };
+
+                                return api.token(socket.locals.token).getList(payload.room);
+
+                            }
+                        )
+                        .then(
+                            function success(list) {
+                                authorizeUserConnection(list, socket);
+                            }
+                        )
+                        .catch(function (err) {
+
+
+                            if (err.constructor.name === 'ApiError') {
+
+                                switch (err.endpoint) {
+
+                                    case 'check-token':
+
+                                        logger.info("Dropping user for expired session", {
+                                            userId: payload.userId,
+                                            room: socket.locals.room || payload.room,
+                                            errorMessage: err.message
+                                        });
+                                        socket.emit("chat_error", {
+                                            code: 99,
+                                            message: "Sessione scaduta"
+                                        });
+
+                                        break;
+
+                                    case 'user':
+
+                                        logger.info("User is not found in API", {
+                                            userId: payload.userId,
+                                            room: socket.locals.room || payload.room,
+                                            errorMessage: err.message
+                                        });
+                                        socket.emit("chat_error", {
+                                            code: 99,
+                                            message: "Sessione scaduta"
+                                        });
+
+                                        break;
+
+                                    case 'list':
+
+                                        logger.info("Dropping user for invalid channel", {
+                                            userId: payload.userId,
+                                            room: socket.locals.room || payload.room,
+                                            errorMessage: err.message
+                                        });
+
+                                        socket.emit("chat_error", {
+                                            code: 98,
+                                            message: "Canale non attivo o inesistente"
+                                        });
+
+                                        break;
+
                                 }
+
                             }
-                        );
 
-                    tools.message.getHistory(socket.locals.room, payload.userId, 0)
-                        .then(
-                            function success(history) {
-                                socket.emit("history", history);
-                                logger.info("Sending history", { room: socket.locals.room, history_length: history.length, page: 0 } );
-                                socket.emit("handshake", data);
-                            },
-                            function error(e) {
-                                console.log(e);
-                                logger.error("Error while getting room history", { room: socket.locals.room, error: e } );
-                                socket.emit("handshake", data);
+                            //APPLICATION ERROR
+                            else {
+
+                                logger.error(err);
+
+                                socket.emit("chat_error", {
+                                    code: 1,
+                                    message: ""
+                                });
+
                             }
-                        );
 
-            }
-            )
-            .catch(function (err) {
+                            socket.disconnect();
 
-
-                if(err.constructor.name === 'ApiError') {
-
-                    switch(err.endpoint) {
-
-                        case 'check-token':
-
-                            logger.info("Dropping user for expired session", { userId: payload.userId, room: socket.locals.room || payload.room, errorMessage: err.message });
-                            socket.emit("chat_error", {
-                                code: 99,
-                                message: "Sessione scaduta"
-                            });
-
-                            break;
-
-                        case 'user':
-
-                            logger.info("User is not found in API", { userId: payload.userId, room: socket.locals.room || payload.room, errorMessage: err.message });
-                            socket.emit("chat_error", {
-                                code: 99,
-                                message: "Sessione scaduta"
-                            });
-
-                            break;
-
-                        case 'list':
-
-                            logger.info("Dropping user for invalid channel", { userId: payload.userId, room: socket.locals.room || payload.room, errorMessage: err.message });
-
-                            socket.emit("chat_error", {
-                                code: 98,
-                                message: "Canale non attivo o inesistente"
-                            });
-
-                            break;
-
-                    }
-
+                        });
                 }
-
-                //APPLICATION ERROR
+                //ANONYMOUS USER
                 else {
 
-                    logger.error(err);
+                    if(!room.config.allowAnonymous) {
 
-                    socket.emit("chat_error", {
-                        code: 1,
-                        message: ""
+                        logger.info("The channel does not accept anonymous users", {
+                            room: payload.room
+                        });
+
+                        socket.emit("goToLogin");
+                        socket.disconnect();
+
+                        return;
+
+                    }
+
+                    socket.locals = {
+                        token: null
+                    };
+
+                    socket.locals.user = {
+                        imageUrl: null,
+                        anonymous: true
+                    };
+
+                    const userId = payload.userId || "anonymous_" + new Date().getTime();
+
+                    tools.user.get(userId, payload.room).then(
+
+                        function success(user) {
+                            socket.locals.user.id = user.id;
+                            socket.locals.user.name = user.name;
+                        },
+                        function error() {
+                            socket.locals.user.id =  "anonymous_" + new Date().getTime();
+                            socket.locals.user.name = "anonimo_" + new Date().getTime();
+                        }
+
+                    ).then(() => {
+
+
+                        api.getList(payload.room).then(
+                            function success(list) {
+                                authorizeUserConnection(list, socket);
+                            },
+                            function error(err) {
+                                logger.info("Dropping user for invalid channel", {
+                                    userId: payload.userId,
+                                    room: socket.locals.room || payload.room,
+                                    errorMessage: err.message
+                                });
+
+                                socket.emit("chat_error", {
+                                    code: 98,
+                                    message: "Canale non attivo o inesistente"
+                                });
+                            }
+                        );
+
+
                     });
+
 
                 }
 
-                socket.disconnect();
 
-            });
+            },
+            function (e) {
+                socket.disconnect();
+                return;
+            }
+        );
+
 
 
 
@@ -243,6 +343,48 @@ module.exports.controller = (socket) => {
                 });
         });
 
+        socket.on("change_nickname", nickname => {
+
+            if(!socket.locals.user.anonymous)
+                return;
+
+            const validation = Joi.validate(nickname, nicknameSchema);
+
+            if(validation.error) {
+                logger.error("Error while changing nickname", {
+                    validation_err: validation.error.message
+                });
+
+                socket.emit("chat_error", {
+                    code: 101,
+                    message: "Il tuo nome non può essere inferiore a 2 caratteri o maggiore di 30."
+                });
+
+                return false;
+            }
+
+
+            if(socket.locals.user.name === nickname)
+                return false;
+
+            let messageBlock = {};
+            messageBlock.message = socket.locals.user.name + " è adesso " + nickname;
+
+            socket.locals.user.name = nickname;
+            socket.emit("change_nickname", socket.locals.user);
+
+            messageBlock.image = null;
+            messageBlock.from = 'server';
+            messageBlock.time = new Date();
+            messageBlock.room = socket.locals.room;
+            messageBlock.likes = [];
+
+            tools.message.setMessage(messageBlock);
+
+            io.sockets.in(socket.locals.room).emit("server_update", messageBlock);
+
+        });
+
         socket.on("topic_update", (topic) => {
 
             if(socket.locals.user.id !== socket.locals.ownerId) {
@@ -250,10 +392,10 @@ module.exports.controller = (socket) => {
                 return false;
             }
 
-            Joi.validate(topic, topicSchema, (err) => {
+            Joi.validate(topic, topicSchema, (validation) => {
 
-                if(err) {
-                    logger.error("Error changing topic", { room: socket.locals.room, topic: topic, validation_err: err.message } );
+                if(validation) {
+                    logger.error("Error changing topic", { room: socket.locals.room, topic: topic, validation_err: validation.error.message } );
                     return;
                 }
 
