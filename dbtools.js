@@ -435,8 +435,7 @@ module.exports = {
                                     return;
                                 }
 
-                                resolve();
-                                console.log(response.value);
+                                resolve(response.value);
                             });
                         }
 
@@ -451,8 +450,7 @@ module.exports = {
                                     return;
                                 }
 
-                                resolve();
-                                console.log(response.value);
+                                resolve(response.value);
                             });
 
 

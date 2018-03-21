@@ -51,38 +51,48 @@ const authorizeUserConnection = (list, room, socket) => {
     data.ownerId = list.data.userId;
     data.user = socket.locals.user;
     data.roomConfig = (socket.locals.ownerId === socket.locals.user.id) ? room.config : null;
-    data.participants = (socket.locals.ownerId === socket.locals.user.id) ? room.participants : null;
+
 
     socket.locals.room = list.data.id;
 
     socket.join(list.data.id);
-    tools.room.participant(list.data.id, data.user, { status: 'online' });
-    logger.info("User joining room", { userId: socket.locals.user.id, room: socket.locals.room });
+
+    tools.room.participant(list.data.id, data.user, { status: 'online' }).then(
+        function success() {
+
+            data.participants = (socket.locals.ownerId === socket.locals.user.id) ? room.participants : null;
+
+
+            logger.info("User joining room", { userId: socket.locals.user.id, room: socket.locals.room });
 
 
 
-    tools.room.getTopic(socket.locals.room)
-        .then(
-            function success(topic) {
-                if(topic) {
-                    socket.emit("topic_update", topic);
-                    logger.info('Sending topic', { room: socket.locals.room, topic: topic });
-                }
-            }
-        );
+            tools.room.getTopic(socket.locals.room)
+                .then(
+                    function success(topic) {
+                        if(topic) {
+                            socket.emit("topic_update", topic);
+                            logger.info('Sending topic', { room: socket.locals.room, topic: topic });
+                        }
+                    }
+                );
 
-    tools.message.getHistory(socket.locals.room, socket.locals.user.id, 0)
-        .then(
-            function success(history) {
-                socket.emit("history", history);
-                logger.info("Sending history", { room: socket.locals.room, history_length: history.length, page: 0 } );
-                socket.emit("handshake", data);
-            },
-            function error(e) {
-                logger.error("Error while getting room history", { room: socket.locals.room, error: e } );
-                socket.emit("handshake", data);
-            }
-        );
+            tools.message.getHistory(socket.locals.room, socket.locals.user.id, 0)
+                .then(
+                    function success(history) {
+                        socket.emit("history", history);
+                        logger.info("Sending history", { room: socket.locals.room, history_length: history.length, page: 0 } );
+                        socket.emit("handshake", data);
+                    },
+                    function error(e) {
+                        logger.error("Error while getting room history", { room: socket.locals.room, error: e } );
+                        socket.emit("handshake", data);
+                    }
+                );
+
+        }
+    );
+
 
 };
 
@@ -480,7 +490,7 @@ module.exports.controller = (socket) => {
                                     filename: data.image_name.toString()
                                 }
                             },
-                            message: data.message || null
+                            comment: data.message || null
                         }
                     }).then(
                         response => {
