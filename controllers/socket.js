@@ -7,7 +7,6 @@ const pmx               = require('../utils/keymetrics');
 const sanitizeHtml      = require('sanitize-html');
 const process           = require("process");
 
-
 const topicSchema       = require('../schema/topic');
 const handshakeSchema   = require('../schema/handshake');
 const nicknameSchema   = require('../schema/nickname');
@@ -31,8 +30,7 @@ const refreshConnectionsProbe = () => {
     });
 };
 
-const authorizeUserConnection = (list, socket) => {
-
+const authorizeUserConnection = (list, room, socket) => {
 
     if(process.env.NODE_ENV === 'production' && typeof list.data.chatState !== 'undefined' && list.data.chatState === 0) {
         logger.info("Chat service not active for this list", { userId: socket.locals.user.id, room: socket.locals.room });
@@ -52,10 +50,13 @@ const authorizeUserConnection = (list, socket) => {
 
     data.ownerId = list.data.userId;
     data.user = socket.locals.user;
+    data.roomConfig = (socket.locals.ownerId === socket.locals.user.id) ? room.config : null;
+    data.participants = (socket.locals.ownerId === socket.locals.user.id) ? room.participants : null;
 
     socket.locals.room = list.data.id;
 
     socket.join(list.data.id);
+    tools.room.participant(list.data.id, data.user, { status: 'online' });
     logger.info("User joining room", { userId: socket.locals.user.id, room: socket.locals.room });
 
 
@@ -109,8 +110,10 @@ module.exports.controller = (socket) => {
 
     socket.on("disconnect", () => {
 
-        if(socket.locals && socket.locals.room)
+        if(socket.locals && socket.locals.room) {
             socket.leave(socket.locals.room);
+            tools.room.participant(socket.locals.room, socket.locals.user, { status: 'offline' });
+        }
 
         if(handshakeTimer)
             clearTimeout(handshakeTimer);
@@ -172,7 +175,7 @@ module.exports.controller = (socket) => {
                         )
                         .then(
                             function success(list) {
-                                authorizeUserConnection(list, socket);
+                                authorizeUserConnection(list, room, socket);
                             }
                         )
                         .catch(function (err) {
@@ -248,7 +251,7 @@ module.exports.controller = (socket) => {
                 //ANONYMOUS USER
                 else {
 
-                    if(!room.config.allowAnonymous) {
+                    if(!room.config.allowAnonymousUsers) {
 
                         logger.info("The channel does not accept anonymous users", {
                             room: payload.room
@@ -261,51 +264,60 @@ module.exports.controller = (socket) => {
 
                     }
 
-                    socket.locals = {
-                        token: null
-                    };
+                    api.getList(payload.room).then(
+                        function success(list) {
 
-                    socket.locals.user = {
-                        imageUrl: null,
-                        anonymous: true
-                    };
+                            socket.locals = {
+                                token: null
+                            };
 
-                    const userId = payload.userId || "anonymous_" + new Date().getTime();
+                            //Try to restore know anonymous session
+                            if(payload.userId) {
 
-                    tools.user.get(userId, payload.room).then(
+                                tools.user.get(payload.userId, payload.room).then(
 
-                        function success(user) {
-                            socket.locals.user.id = user.id;
-                            socket.locals.user.name = user.name;
-                        },
-                        function error() {
-                            socket.locals.user.id =  "anonymous_" + new Date().getTime();
-                            socket.locals.user.name = "anonimo_" + new Date().getTime();
-                        }
+                                    function success(user) {
+                                        socket.locals.user = user;
+                                        authorizeUserConnection(list, room, socket);
+                                    },
+                                    function error() {
+                                        tools.user.generateAnonymous(list).then(
+                                            (user) => {
+                                                socket.locals.user = user;
+                                                authorizeUserConnection(list, room, socket);
+                                            }
+                                        );
+                                    }
 
-                    ).then(() => {
+                                )
 
-
-                        api.getList(payload.room).then(
-                            function success(list) {
-                                authorizeUserConnection(list, socket);
-                            },
-                            function error(err) {
-                                logger.info("Dropping user for invalid channel", {
-                                    userId: payload.userId,
-                                    room: socket.locals.room || payload.room,
-                                    errorMessage: err.message
-                                });
-
-                                socket.emit("chat_error", {
-                                    code: 98,
-                                    message: "Canale non attivo o inesistente"
-                                });
                             }
-                        );
+                            //New anonymous session
+                            else {
+                                tools.user.generateAnonymous(payload.room).then(
+                                    (user) => {
+                                        socket.locals.user = user;
+                                        authorizeUserConnection(list, room, socket);
+                                    }
+                                );
+                            }
 
 
-                    });
+                        },
+                        function error(err) {
+                            logger.info("Dropping user for invalid channel", {
+                                userId: payload.userId,
+                                room: socket.locals.room || payload.room,
+                                errorMessage: err.message
+                            });
+
+                            socket.emit("chat_error", {
+                                code: 98,
+                                message: "Canale non attivo o inesistente"
+                            });
+                        }
+                    );
+
 
 
                 }
@@ -372,6 +384,8 @@ module.exports.controller = (socket) => {
 
             socket.locals.user.name = nickname;
             socket.emit("change_nickname", socket.locals.user);
+
+            tools.room.participant(socket.locals.room, socket.locals.user);
 
             messageBlock.image = null;
             messageBlock.from = 'server';
@@ -465,7 +479,8 @@ module.exports.controller = (socket) => {
                                 options: {
                                     filename: data.image_name.toString()
                                 }
-                            }
+                            },
+                            message: data.message || null
                         }
                     }).then(
                         response => {
@@ -524,6 +539,26 @@ module.exports.controller = (socket) => {
                     },
                     function error(e) {
                         logger.info("Error while getting room history", { room: socket.locals.room, error: e } );
+
+                    }
+                );
+
+        });
+
+        socket.on("set_config", data => {
+
+            if(socket.locals.user.id !== socket.locals.ownerId) {
+                logger.info("User not authorized to set room config", { room: socket.locals.room, userId: socket.locals.user.id } );
+                return false;
+            }
+
+            tools.room.setConfig(socket.locals.room, data)
+                .then(
+                    function success(config) {
+                        logger.info("New room config", { room: socket.locals.room, config: config } );
+                    },
+                    function error(e) {
+                        logger.info("Error while setting room config", { room: socket.locals.room, error: e } );
 
                     }
                 );

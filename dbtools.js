@@ -6,6 +6,7 @@ const logger            = require('./utils/logger');
 const MongoClient       = require('mongodb').MongoClient;
 const ObjectId          = require('mongodb').ObjectID;
 const Joi               = require('joi');
+const uuidv1            = require('uuid/v1');
 
 const roomConfigSchema  = require('./schema/roomConfig');
 const HISTORY_MAX_SIZE  = parseInt(process.env.HISTORY_MAX_SIZE);
@@ -27,6 +28,18 @@ MongoClient.connect(process.env.MONGO_SERVER, function(err, client) {
 
     logger.info("Connected successfully to MongoDB server");
 });
+
+const roomDefaultSchema = (room) => {
+    return {
+        room_id: room,
+        topic: '',
+        participants: [],
+        config: {
+            allowAnonymousUsers: true,
+            anonymousSessionCount: 0
+        }
+    }
+};
 
 module.exports = {
     user: {
@@ -51,6 +64,34 @@ module.exports = {
                 });
 
             });
+        },
+        generateAnonymous: (roomId) => {
+
+            return new Promise((resolve, reject) => {
+
+                rooms.findOneAndUpdate({ room_id: roomId }, { "$inc": { "config.anonymousSessionCount": 1 }}, (err, room) => {
+
+                    if(err) {
+                        reject(err);
+                        return;
+                    }
+
+                    const count = room.value.config.anonymousSessionCount || 1;
+
+                    const user = {
+                        imageUrl: null,
+                        anonymous: true,
+                        name: 'anonimo-' + count,
+                        id: uuidv1(),
+                    };
+
+                    resolve(user);
+
+                })
+
+            });
+
+
         }
     },
     message: {
@@ -288,7 +329,7 @@ module.exports = {
                         }
 
                         if (!roomFromDb) {
-                            rooms.insertOne({room_id: room, topic: '', config: { allowAnonymous: true }}, (err, _room) => {
+                            rooms.insertOne(roomDefaultSchema(room), (err, _room) => {
 
                                 if(err) {
                                     reject(err);
@@ -311,30 +352,39 @@ module.exports = {
             });
 
         },
-        setConfig: (room, config) => {
+        setConfig: (room, newConfig) => {
 
             return new Promise((resolve, reject) => {
 
                 try {
 
-                    const validation = Joi.validate(config, roomConfigSchema);
-
-                    if(validation.error) {
-                        logger.error("Error while setting room options", {
-                            validation_err: validation.message
-                        });
-                        return false;
-                    }
-
-
-                    rooms.updateOne({ room_id: room }, config, { upsert: true }, (err, response) => {
+                    rooms.findOne({ room_id: room }, (err, roomFromDb) => {
 
                         if(err) {
                             reject(err);
                             return;
                         }
 
-                        resolve(response);
+                        let config = Object.assign(roomFromDb.config, newConfig);
+
+                        const validation = Joi.validate(config, roomConfigSchema);
+
+                        if(validation.error) {
+                            reject(validation.error.message);
+                            return false;
+                        }
+
+
+                        rooms.updateOne({ room_id: room }, { $set: { config: config }}, (err, response) => {
+
+                            if(err) {
+                                reject(err);
+                                return;
+                            }
+
+                            resolve(config);
+                        });
+
                     });
 
 
@@ -347,6 +397,80 @@ module.exports = {
                 }
             });
 
+        },
+        participant: (roomId, user, data) => {
+
+
+            return new Promise((resolve, reject) => {
+
+                try {
+
+                    if(typeof data === 'undefined')
+                        data = { };
+
+                    rooms.findOne({room_id: roomId}, (err, roomFromDb) => {
+
+                        if (err) {
+                            reject(err);
+                            return;
+                        }
+
+                        if(!roomFromDb) {
+                            reject(null);
+                            return;
+                        }
+
+                        let _participant = roomFromDb.participants.find((el) => {
+                            return el.id === user.id;
+                        });
+
+                        if(_participant) {
+                            //Update
+                            let participant = Object.assign(_participant, user, data, { lastSeen: new Date() });
+
+                            rooms.findOneAndUpdate({ room_id: roomId, "participants.id": user.id }, { $set: { "participants.$": participant }}, (err, response) => {
+
+                                if(err) {
+                                    reject(err);
+                                    return;
+                                }
+
+                                resolve();
+                                console.log(response.value);
+                            });
+                        }
+
+                        else {
+                            //Insert
+                            let participant = Object.assign(user, {status: 'online', ban: false}, data, { lastSeen: new Date() });
+
+                            rooms.findOneAndUpdate({ room_id: roomId }, { $push: { "participants": participant }}, (err, response) => {
+
+                                if(err) {
+                                    reject(err);
+                                    return;
+                                }
+
+                                resolve();
+                                console.log(response.value);
+                            });
+
+
+                        }
+
+
+
+
+                    });
+                }
+                catch (e) {
+                    reject(e);
+                }
+
+
+
+
+            });
         }
     }
 };
