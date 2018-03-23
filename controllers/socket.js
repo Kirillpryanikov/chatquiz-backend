@@ -30,6 +30,50 @@ const refreshConnectionsProbe = () => {
     });
 };
 
+const notifyRoomAdmin = (room, cmd, payload) => {
+
+    if(!cmd)
+        return false;
+
+    if(typeof payload === 'undefined')
+        payload = null;
+
+
+
+    const nspSockets = io.sockets.in(room).sockets;
+
+
+    for (let key in nspSockets) {
+
+        if (!nspSockets.hasOwnProperty(key)) continue;
+
+
+        if(nspSockets[key].locals && nspSockets[key].locals.user.id === nspSockets[key].locals.ownerId) {
+            nspSockets[key].emit(cmd, payload);
+            logger.info("Notifying room admin", { room: room, userId: nspSockets[key].locals.user.id, command: cmd });
+        }
+
+    }
+
+
+};
+
+const updateParticipant = function (room, user, payload) {
+
+    if(typeof payload === 'undefined')
+        payload = {};
+
+    tools.room.participant(room, user, payload).then(
+        function success(participants) {
+            notifyRoomAdmin(room, 'participants', participants);
+        },
+        function error(err) {
+            logger.error("Error retrieving the participants list", { error: err });
+        }
+    );
+
+};
+
 const authorizeUserConnection = (list, room, socket) => {
 
     if(process.env.NODE_ENV === 'production' && typeof list.data.chatState !== 'undefined' && list.data.chatState === 0) {
@@ -43,56 +87,60 @@ const authorizeUserConnection = (list, room, socket) => {
         return;
     }
 
+    if(room.participants.find((participant) => participant.id === socket.locals.user.id && participant.ban)) {
+
+        logger.info("User can't access: Banned", { userId: socket.locals.user.id, room: socket.locals.room });
+        socket.emit("chat_error", {
+            code: 96,
+            message: "Non puoi partecipare a questa Storyboard"
+        });
+
+        socket.disconnect();
+        return;
+    }
+
 
     let data = {};
 
     socket.locals.ownerId = list.data.userId;
 
+
     data.ownerId = list.data.userId;
     data.user = socket.locals.user;
     data.roomConfig = (socket.locals.ownerId === socket.locals.user.id) ? room.config : null;
-
 
     socket.locals.room = list.data.id;
 
     socket.join(list.data.id);
 
-    tools.room.participant(list.data.id, data.user, { status: 'online' }).then(
-        function success() {
 
-            data.participants = (socket.locals.ownerId === socket.locals.user.id) ? room.participants : null;
+    logger.info("User joining room", { userId: socket.locals.user.id, room: socket.locals.room });
 
 
-            logger.info("User joining room", { userId: socket.locals.user.id, room: socket.locals.room });
+    tools.room.getTopic(socket.locals.room)
+        .then(
+            function success(topic) {
+                if(topic) {
+                    socket.emit("topic_update", topic);
+                    logger.info('Sending topic', { room: socket.locals.room, topic: topic });
+                }
+            }
+        );
 
-
-
-            tools.room.getTopic(socket.locals.room)
-                .then(
-                    function success(topic) {
-                        if(topic) {
-                            socket.emit("topic_update", topic);
-                            logger.info('Sending topic', { room: socket.locals.room, topic: topic });
-                        }
-                    }
-                );
-
-            tools.message.getHistory(socket.locals.room, socket.locals.user.id, 0)
-                .then(
-                    function success(history) {
-                        socket.emit("history", history);
-                        logger.info("Sending history", { room: socket.locals.room, history_length: history.length, page: 0 } );
-                        socket.emit("handshake", data);
-                    },
-                    function error(e) {
-                        logger.error("Error while getting room history", { room: socket.locals.room, error: e } );
-                        socket.emit("handshake", data);
-                    }
-                );
-
-        }
-    );
-
+    tools.message.getHistory(socket.locals.room, socket.locals.user.id, 0)
+        .then(
+            function success(history) {
+                socket.emit("history", history);
+                logger.info("Sending history", { room: socket.locals.room, history_length: history.length, page: 0 } );
+                socket.emit("handshake", data);
+                updateParticipant(list.data.id, data.user, { status: 'online' });
+            },
+            function error(e) {
+                logger.error("Error while getting room history", { room: socket.locals.room, error: e } );
+                socket.emit("handshake", data);
+                updateParticipant(list.data.id, data.user, { status: 'online' });
+            }
+        );
 
 };
 
@@ -122,7 +170,7 @@ module.exports.controller = (socket) => {
 
         if(socket.locals && socket.locals.room) {
             socket.leave(socket.locals.room);
-            tools.room.participant(socket.locals.room, socket.locals.user, { status: 'offline' });
+            updateParticipant(socket.locals.room, socket.locals.user, { status: 'offline' });
         }
 
         if(handshakeTimer)
@@ -291,7 +339,7 @@ module.exports.controller = (socket) => {
                                         authorizeUserConnection(list, room, socket);
                                     },
                                     function error() {
-                                        tools.user.generateAnonymous(list).then(
+                                        tools.user.generateAnonymous(list.data.id).then(
                                             (user) => {
                                                 socket.locals.user = user;
                                                 authorizeUserConnection(list, room, socket);
@@ -395,7 +443,7 @@ module.exports.controller = (socket) => {
             socket.locals.user.name = nickname;
             socket.emit("change_nickname", socket.locals.user);
 
-            tools.room.participant(socket.locals.room, socket.locals.user);
+            updateParticipant(socket.locals.room, socket.locals.user);
 
             messageBlock.image = null;
             messageBlock.from = 'server';
@@ -490,7 +538,7 @@ module.exports.controller = (socket) => {
                                     filename: data.image_name.toString()
                                 }
                             },
-                            comment: data.message || null
+                            comment: data.message || ''
                         }
                     }).then(
                         response => {
@@ -574,6 +622,93 @@ module.exports.controller = (socket) => {
                 );
 
         });
+
+        socket.on("ban_user", data => {
+
+            if(socket.locals.user.id !== socket.locals.ownerId) {
+                logger.info("User not authorized to ban", { room: socket.locals.room, userId: socket.locals.user.id } );
+                return false;
+            }
+
+            logger.info("Admin changing user ban state", { room: socket.locals.room, userId: data.id, ban_status: data.ban === true } );
+
+
+
+            const nspSockets = io.sockets.in(socket.locals.room).sockets;
+
+            for (let key in nspSockets) {
+
+                if (!nspSockets.hasOwnProperty(key)) continue;
+
+
+                if(nspSockets[key].locals.user.id === data.id) {
+                    logger.info("Kicking user", { room: socket.locals.room, userId: nspSockets[key].locals.user.id });
+
+
+                    let messageBlock = {};
+
+                    messageBlock.message = nspSockets[key].locals.user.name + " non partecipa più alla Storyboard.";
+                    messageBlock.image = null;
+                    messageBlock.from = 'server';
+                    messageBlock.time = new Date();
+                    messageBlock.room = socket.locals.room;
+                    messageBlock.likes = [];
+
+                    tools.message.setMessage(messageBlock);
+
+                    io.sockets.in(socket.locals.room).emit("server_update", messageBlock);
+
+                    nspSockets[key].disconnect();
+                }
+
+            }
+
+
+            updateParticipant(socket.locals.room, data.id, { ban: data.ban === true });
+
+
+        });
+
+        socket.on("delete_message", id => {
+
+            if (socket.locals.user.id !== socket.locals.ownerId) {
+                logger.info("User not authorized to delete message", {room: socket.locals.room, userId: socket.locals.user.id});
+                return false;
+            }
+
+            tools.message.deleteOne(id).then(
+                function success() {
+                    logger.info("Message deleted", { messageId: id, room: socket.locals.room });
+                    io.sockets.in(socket.locals.room).emit("history_update", [{ id: id, action: 'delete' }]);
+                },
+                function error(err) {
+                    logger.error("Error while deleting a message", { error: err });
+                }
+            );
+
+        });
+
+        socket.on("delete_messages_by_user", id => {
+
+            if(socket.locals.user.id !== socket.locals.ownerId) {
+                logger.info("User not authorized to delete messages", { room: socket.locals.room, userId: socket.locals.user.id } );
+                return false;
+            }
+
+            tools.message.deleteMessagesOfUser(socket.locals.room, id).then(
+
+                function success(response) {
+                    logger.info("User messages deleted", { userId: id, count: response.modified});
+                    io.sockets.in(socket.locals.room).emit("history_update", response.list);
+                },
+
+                function error(err) {
+                    logger.error("Error while deleting user messages", { error: err });
+                }
+
+            );
+
+        })
 
     });
 
