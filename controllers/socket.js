@@ -400,6 +400,7 @@ module.exports.controller = (socket) => {
             messageBlock.time = new Date();
             messageBlock.room = socket.locals.room;
             messageBlock.likes = [];
+            messageBlock.status = 1;
 
 
             tools.message.setMessage(messageBlock)
@@ -450,6 +451,7 @@ module.exports.controller = (socket) => {
             messageBlock.time = new Date();
             messageBlock.room = socket.locals.room;
             messageBlock.likes = [];
+            messageBlock.status = 1;
 
             tools.message.setMessage(messageBlock);
 
@@ -552,6 +554,7 @@ module.exports.controller = (socket) => {
                             messageBlock.time = new Date();
                             messageBlock.room = socket.locals.room;
                             messageBlock.likes = [];
+                            messageBlock.status = 1;
 
                             tools.message.setMessage(messageBlock)
                                 .then(function (resp) {
@@ -653,6 +656,7 @@ module.exports.controller = (socket) => {
                     messageBlock.time = new Date();
                     messageBlock.room = socket.locals.room;
                     messageBlock.likes = [];
+                    messageBlock.status = 1;
 
                     tools.message.setMessage(messageBlock);
 
