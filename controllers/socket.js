@@ -68,7 +68,7 @@ const updateParticipant = function (room, user, payload) {
             notifyRoomAdmin(room, 'participants', participants);
         },
         function error(err) {
-            logger.error("Error retrieving the participants list", { error: err });
+            logger.error("Error retrieving the participants list", { error: err, room: room });
         }
     );
 

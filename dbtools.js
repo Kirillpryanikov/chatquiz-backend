@@ -485,13 +485,13 @@ module.exports = {
                         }
 
                         if (!roomFromDb) {
-                            reject(null);
+                            reject('Not existing room');
                             return;
                         }
 
-                        let _participant = roomFromDb.participants.find((el) => {
+                        let _participant = (roomFromDb.participants) ? roomFromDb.participants.find((el) => {
                             return el.id === user.id;
-                        });
+                        }) : null;
 
                         if (_participant) {
                             //Update
