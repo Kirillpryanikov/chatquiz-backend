@@ -110,7 +110,7 @@ module.exports = {
                     const limit = parseInt(process.env.HISTORY_LIMIT);
 
 
-                    messages.find({room: room})
+                    messages.find({room: room, $or: [ { to: null }, { to: user_id }, { to: { $exists: false } } ]})
                         .skip(skip)
                         .limit(limit)
                         .sort({time: -1, _id: -1})
@@ -361,10 +361,7 @@ module.exports = {
 
                     const _topic = topic.substring(0, parseInt(process.env.TOPIC_LENGTH));
 
-                    rooms.updateOne({room_id: room}, {
-                        topic: _topic,
-                        room_id: room
-                    }, {upsert: true}, (err, response) => {
+                    rooms.updateOne({room_id: room}, {$set: { topic: _topic }}, {upsert: true}, (err, response) => {
 
                         if (err) {
                             reject(err);

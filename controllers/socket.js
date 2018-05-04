@@ -1,22 +1,24 @@
-const tools             = require("../dbtools");
-const Joi               = require('joi');
-const logger            = require("../utils/logger");
-const api               = require('../utils/api');
-const fs                = require("fs");
-const pmx               = require('../utils/keymetrics');
-const sanitizeHtml      = require('sanitize-html');
-const process           = require("process");
+const tools = require("../dbtools");
+const Joi = require('joi');
+const logger = require("../utils/logger");
+const api = require('../utils/api');
+const fs = require("fs");
+const pmx = require('../utils/keymetrics');
+const sanitizeHtml = require('sanitize-html');
+const process = require("process");
 
-const topicSchema       = require('../schema/topic');
-const handshakeSchema   = require('../schema/handshake');
-const nicknameSchema   = require('../schema/nickname');
+const topicSchema = require('../schema/topic');
+const handshakeSchema = require('../schema/handshake');
+const nicknameSchema = require('../schema/nickname');
 
 const tmpDirectory = './tmp';
 
-const probe             = pmx.probe();
-const connectionsProbe  = probe.metric({
-    name    : 'Chat connections'
+const probe = pmx.probe();
+const connectionsProbe = probe.metric({
+    name: 'Chat connections'
 });
+
+const defaultTopic = "Benvenuti alla Storyboard di {0} e {1}";
 
 connectionsProbe.set(0);
 
@@ -32,12 +34,11 @@ const refreshConnectionsProbe = () => {
 
 const notifyRoomAdmin = (room, cmd, payload) => {
 
-    if(!cmd)
+    if (!cmd)
         return false;
 
-    if(typeof payload === 'undefined')
+    if (typeof payload === 'undefined')
         payload = null;
-
 
 
     const nspSockets = io.sockets.in(room).sockets;
@@ -48,9 +49,9 @@ const notifyRoomAdmin = (room, cmd, payload) => {
         if (!nspSockets.hasOwnProperty(key)) continue;
 
 
-        if(nspSockets[key].locals && nspSockets[key].locals.user.id === nspSockets[key].locals.ownerId) {
+        if (nspSockets[key].locals && nspSockets[key].locals.user.id === nspSockets[key].locals.ownerId) {
             nspSockets[key].emit(cmd, payload);
-            logger.info("Notifying room admin", { room: room, userId: nspSockets[key].locals.user.id, command: cmd });
+            logger.info("Notifying room admin", {room: room, userId: nspSockets[key].locals.user.id, command: cmd});
         }
 
     }
@@ -60,7 +61,7 @@ const notifyRoomAdmin = (room, cmd, payload) => {
 
 const updateParticipant = function (room, user, payload) {
 
-    if(typeof payload === 'undefined')
+    if (typeof payload === 'undefined')
         payload = {};
 
     tools.room.participant(room, user, payload).then(
@@ -68,7 +69,7 @@ const updateParticipant = function (room, user, payload) {
             notifyRoomAdmin(room, 'participants', participants);
         },
         function error(err) {
-            logger.error("Error retrieving the participants list", { error: err, room: room });
+            logger.error("Error retrieving the participants list", {error: err, room: room});
         }
     );
 
@@ -76,8 +77,8 @@ const updateParticipant = function (room, user, payload) {
 
 const authorizeUserConnection = (list, room, socket) => {
 
-    if(process.env.NODE_ENV === 'production' && typeof list.data.chatState !== 'undefined' && list.data.chatState === 0) {
-        logger.info("Chat service not active for this list", { userId: socket.locals.user.id, room: socket.locals.room });
+    if (process.env.NODE_ENV === 'production' && typeof list.data.chatState !== 'undefined' && list.data.chatState === 0) {
+        logger.info("Chat service not active for this list", {userId: socket.locals.user.id, room: socket.locals.room});
         socket.emit("chat_error", {
             code: 97,
             message: "Il servizio non è attivo su questa lista"
@@ -87,9 +88,9 @@ const authorizeUserConnection = (list, room, socket) => {
         return;
     }
 
-    if(room.participants.find((participant) => participant.id === socket.locals.user.id && participant.ban)) {
+    if (room.participants.find((participant) => participant.id === socket.locals.user.id && participant.ban)) {
 
-        logger.info("User can't access: Banned", { userId: socket.locals.user.id, room: socket.locals.room });
+        logger.info("User can't access: Banned", {userId: socket.locals.user.id, room: socket.locals.room});
         socket.emit("chat_error", {
             code: 96,
             message: "Non puoi partecipare a questa Storyboard"
@@ -114,15 +115,21 @@ const authorizeUserConnection = (list, room, socket) => {
     socket.join(list.data.id);
 
 
-    logger.info("User joining room", { userId: socket.locals.user.id, room: socket.locals.room });
-
+    logger.info("User joining room", {userId: socket.locals.user.id, room: socket.locals.room});
 
     tools.room.getTopic(socket.locals.room)
         .then(
             function success(topic) {
-                if(topic) {
+                if (topic) {
                     socket.emit("topic_update", topic);
-                    logger.info('Sending topic', { room: socket.locals.room, topic: topic });
+                    logger.info('Sending topic', {room: socket.locals.room, topic: topic});
+                }
+                else {
+
+                    const _dT = defaultTopic.format(list.data.brideFirstName, list.data.groomFirstName);
+                    tools.room.setTopic(socket.locals.room, _dT);
+                    socket.emit("topic_update", _dT);
+                    logger.info('Sending default topic', {room: socket.locals.room, topic: _dT});
                 }
             }
         );
@@ -131,14 +138,27 @@ const authorizeUserConnection = (list, room, socket) => {
         .then(
             function success(history) {
                 socket.emit("history", history);
-                logger.info("Sending history", { room: socket.locals.room, history_length: history.length, page: 0 } );
+
+                if (history.length === 0) {
+                    socket.emit('server_update', {
+                        message: 'Messaggio automatico: Benvenuto alla Storyboard!, non ci sono ancora messaggi, ma non essere timido, inizia tu la conversazione :)',
+                        image: null,
+                        from: 'server',
+                        time: new Date(),
+                        room: socket.locals.room,
+                        likes: [],
+                        status: 1
+                    })
+                }
+
+                logger.info("Sending history", {room: socket.locals.room, history_length: history.length, page: 0});
                 socket.emit("handshake", data);
-                updateParticipant(list.data.id, data.user, { status: 'online' });
+                updateParticipant(list.data.id, data.user, {status: 'online'});
             },
             function error(e) {
-                logger.error("Error while getting room history", { room: socket.locals.room, error: e } );
+                logger.error("Error while getting room history", {room: socket.locals.room, error: e});
                 socket.emit("handshake", data);
-                updateParticipant(list.data.id, data.user, { status: 'online' });
+                updateParticipant(list.data.id, data.user, {status: 'online'});
             }
         );
 
@@ -168,12 +188,12 @@ module.exports.controller = (socket) => {
 
     socket.on("disconnect", () => {
 
-        if(socket.locals && socket.locals.room) {
+        if (socket.locals && socket.locals.room) {
             socket.leave(socket.locals.room);
-            updateParticipant(socket.locals.room, socket.locals.user, { status: 'offline' });
+            updateParticipant(socket.locals.room, socket.locals.user, {status: 'offline'});
         }
 
-        if(handshakeTimer)
+        if (handshakeTimer)
             clearTimeout(handshakeTimer);
 
         logger.info("Socket disconnected", {
@@ -191,7 +211,7 @@ module.exports.controller = (socket) => {
 
         const validation = Joi.validate(payload, handshakeSchema);
 
-        if(validation.error) {
+        if (validation.error) {
             logger.error("Error while handshaking", {
                 validation_err: validation.error.message
             });
@@ -204,7 +224,7 @@ module.exports.controller = (socket) => {
             function success(room) {
 
                 //NON ANONYMOUS USER
-                if(payload.token) {
+                if (payload.token) {
 
                     socket.locals = {
                         token: payload.token
@@ -309,7 +329,7 @@ module.exports.controller = (socket) => {
                 //ANONYMOUS USER
                 else {
 
-                    if(!room.config.allowAnonymousUsers) {
+                    if (!room.config.allowAnonymousUsers) {
 
                         logger.info("The channel does not accept anonymous users", {
                             room: payload.room
@@ -330,10 +350,9 @@ module.exports.controller = (socket) => {
                             };
 
                             //Try to restore know anonymous session
-                            if(payload.userId) {
+                            if (payload.userId) {
 
                                 tools.user.get(payload.userId, payload.room).then(
-
                                     function success(user) {
                                         socket.locals.user = user;
                                         authorizeUserConnection(list, room, socket);
@@ -346,7 +365,6 @@ module.exports.controller = (socket) => {
                                             }
                                         );
                                     }
-
                                 )
 
                             }
@@ -377,7 +395,6 @@ module.exports.controller = (socket) => {
                     );
 
 
-
                 }
 
 
@@ -389,18 +406,16 @@ module.exports.controller = (socket) => {
         );
 
 
-
-
         socket.on("message", data => {
 
             let messageBlock = {};
-            messageBlock.message = sanitizeHtml(data, { allowedTags: [], allowedAttributes: [] });
+            messageBlock.message = sanitizeHtml(data, {allowedTags: [], allowedAttributes: []});
 
             messageBlock.from = socket.locals.user;
             messageBlock.time = new Date();
             messageBlock.room = socket.locals.room;
             messageBlock.likes = [];
-            messageBlock.status = 1;
+            messageBlock.to = null;
 
 
             tools.message.setMessage(messageBlock)
@@ -410,18 +425,49 @@ module.exports.controller = (socket) => {
 
                     io.sockets.in(socket.locals.room).emit("message", messageBlock);
 
-                    logger.info("New message", { id: resp._id.toString(), room: socket.locals.room, userId: socket.locals.user.id});
+                    logger.info("New message", {
+                        id: resp._id.toString(),
+                        room: socket.locals.room,
+                        userId: socket.locals.user.id
+                    });
+                });
+        });
+
+        socket.on("private_owner_message", data => {
+
+            let messageBlock = {};
+            messageBlock.message = sanitizeHtml(data, {allowedTags: [], allowedAttributes: []});
+
+            messageBlock.from = socket.locals.user;
+            messageBlock.time = new Date();
+            messageBlock.room = socket.locals.room;
+            messageBlock.likes = [];
+            messageBlock.to = socket.locals.ownerId;
+
+
+            tools.message.setMessage(messageBlock)
+                .then(function (resp) {
+
+                    messageBlock.id = resp._id;
+
+                    notifyRoomAdmin(socket.locals.room, 'message', messageBlock);
+
+                    logger.info("New Owner private message", {
+                        id: resp._id.toString(),
+                        room: socket.locals.room,
+                        userId: socket.locals.user.id
+                    });
                 });
         });
 
         socket.on("change_nickname", nickname => {
 
-            if(!socket.locals.user.anonymous)
+            if (!socket.locals.user.anonymous)
                 return;
 
             const validation = Joi.validate(nickname, nicknameSchema);
 
-            if(validation.error) {
+            if (validation.error) {
                 logger.error("Error while changing nickname", {
                     validation_err: validation.error.message
                 });
@@ -435,7 +481,7 @@ module.exports.controller = (socket) => {
             }
 
 
-            if(socket.locals.user.name === nickname)
+            if (socket.locals.user.name === nickname)
                 return false;
 
             let messageBlock = {};
@@ -461,37 +507,45 @@ module.exports.controller = (socket) => {
 
         socket.on("topic_update", (topic) => {
 
-            if(socket.locals.user.id !== socket.locals.ownerId) {
-                logger.info("User not authorized to change topic", { room: socket.locals.room, userId: socket.locals.user.id } );
+            if (socket.locals.user.id !== socket.locals.ownerId) {
+                logger.info("User not authorized to change topic", {
+                    room: socket.locals.room,
+                    userId: socket.locals.user.id
+                });
                 return false;
             }
 
-            Joi.validate(topic, topicSchema, (validation) => {
+            Joi.validate(topic, topicSchema, (err) => {
 
-                if(validation) {
-                    logger.error("Error changing topic", { room: socket.locals.room, topic: topic, validation_err: validation.error.message } );
+                if (err) {
+                    logger.error("Error changing topic", {
+                        room: socket.locals.room,
+                        topic: topic,
+                        validation_err: err.message
+                    });
                     return;
                 }
 
                 tools.room.setTopic(socket.locals.room, topic);
 
-                logger.info("Changing topic", { room: socket.locals.room, topic: topic } );
+                logger.info("Changing topic", {room: socket.locals.room, topic: topic});
                 io.sockets.in(socket.locals.room).emit("topic_update", topic);
 
             });
 
 
-
-
         });
 
         socket.on("writing", data => {
-            io.sockets.in(socket.locals.room).emit("writing", { id: socket.locals.user.id , name: socket.locals.user.name });
+            io.sockets.in(socket.locals.room).emit("writing", {
+                id: socket.locals.user.id,
+                name: socket.locals.user.name
+            });
         });
 
         socket.on("like", msgId => {
 
-            logger.info("New Like request", { messageId: msgId, room: socket.locals.room, user: socket.locals.user.id });
+            logger.info("New Like request", {messageId: msgId, room: socket.locals.room, user: socket.locals.user.id});
 
             tools.message.setLike(
                 {
@@ -503,7 +557,11 @@ module.exports.controller = (socket) => {
                         io.sockets.in(socket.locals.room).emit("like", resp);
                     },
                     function error() {
-                        logger.error("Error saving like", { messageId: msgId, room: socket.locals.room, user: socket.locals.user.id });
+                        logger.error("Error saving like", {
+                            messageId: msgId,
+                            room: socket.locals.room,
+                            user: socket.locals.user.id
+                        });
                     }
                 );
 
@@ -518,10 +576,10 @@ module.exports.controller = (socket) => {
 
             const fileLocation = tmpDirectory + "/" + new Date().getTime() + "-" + new Buffer(data.image_name.toString()).toString('base64');
 
-            fs.writeFile(fileLocation, data.image.split(",")[1], { encoding: "base64" },
+            fs.writeFile(fileLocation, data.image.split(",")[1], {encoding: "base64"},
                 (err) => {
 
-                    if(err) {
+                    if (err) {
                         socket.emit("chat_error", {
                             code: 100,
                             message: "Errore durante il caricamento dell'immagine, i nostri tecnici sono stati notificati"
@@ -561,17 +619,24 @@ module.exports.controller = (socket) => {
                                     messageBlock.id = resp._id;
 
                                     io.sockets.in(socket.locals.room).emit("image", messageBlock);
-                                    logger.info("New image uploaded", { id: resp.id.toString(), room: socket.locals.room, userId: socket.locals.user.id, url: image.data.imageUrl});
+                                    logger.info("New image uploaded", {
+                                        id: resp.id.toString(),
+                                        room: socket.locals.room,
+                                        userId: socket.locals.user.id,
+                                        url: image.data.imageUrl
+                                    });
 
                                 });
 
-                            fs.unlink(fileLocation, () => {});
+                            fs.unlink(fileLocation, () => {
+                            });
 
                         }
                     )
                         .catch(e => {
 
-                            fs.unlink(fileLocation, () => {});
+                            fs.unlink(fileLocation, () => {
+                            });
 
                             var message = api.errorParser(e) || "Errore durante il caricamento dell'immagine, i nostri tecnici sono stati notificati";
 
@@ -581,7 +646,11 @@ module.exports.controller = (socket) => {
                             });
 
 
-                            logger.error("Error uploading image", { userId: socket.locals.user.id, room: socket.locals.room, error: message });
+                            logger.error("Error uploading image", {
+                                userId: socket.locals.user.id,
+                                room: socket.locals.room,
+                                error: message
+                            });
                         });
 
 
@@ -596,10 +665,14 @@ module.exports.controller = (socket) => {
                 .then(
                     function success(history) {
                         socket.emit("history", history);
-                        logger.info("Sending history", { room: socket.locals.room, history_length: history.length, page: data.page } );
+                        logger.info("Sending history", {
+                            room: socket.locals.room,
+                            history_length: history.length,
+                            page: data.page
+                        });
                     },
                     function error(e) {
-                        logger.info("Error while getting room history", { room: socket.locals.room, error: e } );
+                        logger.info("Error while getting room history", {room: socket.locals.room, error: e});
 
                     }
                 );
@@ -608,18 +681,21 @@ module.exports.controller = (socket) => {
 
         socket.on("set_config", data => {
 
-            if(socket.locals.user.id !== socket.locals.ownerId) {
-                logger.info("User not authorized to set room config", { room: socket.locals.room, userId: socket.locals.user.id } );
+            if (socket.locals.user.id !== socket.locals.ownerId) {
+                logger.info("User not authorized to set room config", {
+                    room: socket.locals.room,
+                    userId: socket.locals.user.id
+                });
                 return false;
             }
 
             tools.room.setConfig(socket.locals.room, data)
                 .then(
                     function success(config) {
-                        logger.info("New room config", { room: socket.locals.room, config: config } );
+                        logger.info("New room config", {room: socket.locals.room, config: config});
                     },
                     function error(e) {
-                        logger.info("Error while setting room config", { room: socket.locals.room, error: e } );
+                        logger.info("Error while setting room config", {room: socket.locals.room, error: e});
 
                     }
                 );
@@ -628,13 +704,16 @@ module.exports.controller = (socket) => {
 
         socket.on("ban_user", data => {
 
-            if(socket.locals.user.id !== socket.locals.ownerId) {
-                logger.info("User not authorized to ban", { room: socket.locals.room, userId: socket.locals.user.id } );
+            if (socket.locals.user.id !== socket.locals.ownerId) {
+                logger.info("User not authorized to ban", {room: socket.locals.room, userId: socket.locals.user.id});
                 return false;
             }
 
-            logger.info("Admin changing user ban state", { room: socket.locals.room, userId: data.id, ban_status: data.ban === true } );
-
+            logger.info("Admin changing user ban state", {
+                room: socket.locals.room,
+                userId: data.id,
+                ban_status: data.ban === true
+            });
 
 
             const nspSockets = io.sockets.in(socket.locals.room).sockets;
@@ -644,8 +723,8 @@ module.exports.controller = (socket) => {
                 if (!nspSockets.hasOwnProperty(key)) continue;
 
 
-                if(nspSockets[key].locals.user.id === data.id) {
-                    logger.info("Kicking user", { room: socket.locals.room, userId: nspSockets[key].locals.user.id });
+                if (nspSockets[key].locals.user.id === data.id) {
+                    logger.info("Kicking user", {room: socket.locals.room, userId: nspSockets[key].locals.user.id});
 
 
                     let messageBlock = {};
@@ -668,7 +747,7 @@ module.exports.controller = (socket) => {
             }
 
 
-            updateParticipant(socket.locals.room, data.id, { ban: data.ban === true });
+            updateParticipant(socket.locals.room, data.id, {ban: data.ban === true});
 
 
         });
@@ -676,17 +755,20 @@ module.exports.controller = (socket) => {
         socket.on("delete_message", id => {
 
             if (socket.locals.user.id !== socket.locals.ownerId) {
-                logger.info("User not authorized to delete message", {room: socket.locals.room, userId: socket.locals.user.id});
+                logger.info("User not authorized to delete message", {
+                    room: socket.locals.room,
+                    userId: socket.locals.user.id
+                });
                 return false;
             }
 
             tools.message.deleteOne(id).then(
                 function success() {
-                    logger.info("Message deleted", { messageId: id, room: socket.locals.room });
-                    io.sockets.in(socket.locals.room).emit("history_update", [{ id: id, action: 'delete' }]);
+                    logger.info("Message deleted", {messageId: id, room: socket.locals.room});
+                    io.sockets.in(socket.locals.room).emit("history_update", [{id: id, action: 'delete'}]);
                 },
                 function error(err) {
-                    logger.error("Error while deleting a message", { error: err });
+                    logger.error("Error while deleting a message", {error: err});
                 }
             );
 
@@ -694,26 +776,39 @@ module.exports.controller = (socket) => {
 
         socket.on("delete_messages_by_user", id => {
 
-            if(socket.locals.user.id !== socket.locals.ownerId) {
-                logger.info("User not authorized to delete messages", { room: socket.locals.room, userId: socket.locals.user.id } );
+            if (socket.locals.user.id !== socket.locals.ownerId) {
+                logger.info("User not authorized to delete messages", {
+                    room: socket.locals.room,
+                    userId: socket.locals.user.id
+                });
                 return false;
             }
 
             tools.message.deleteMessagesOfUser(socket.locals.room, id).then(
-
                 function success(response) {
-                    logger.info("User messages deleted", { userId: id, count: response.modified});
+                    logger.info("User messages deleted", {userId: id, count: response.modified});
                     io.sockets.in(socket.locals.room).emit("history_update", response.list);
                 },
 
                 function error(err) {
-                    logger.error("Error while deleting user messages", { error: err });
+                    logger.error("Error while deleting user messages", {error: err});
                 }
-
             );
 
         })
 
     });
+
+    if (!String.prototype.format) {
+        String.prototype.format = function() {
+            let args = arguments;
+            return this.replace(/{(\d+)}/g, function(match, number) {
+                return typeof args[number] !== 'undefined'
+                    ? args[number]
+                    : match
+                    ;
+            });
+        };
+    }
 
 };
