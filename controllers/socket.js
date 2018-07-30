@@ -383,7 +383,7 @@ module.exports.controller = (socket) => {
                         function error(err) {
                             logger.info("Dropping user for invalid channel", {
                                 userId: payload.userId,
-                                room: socket.locals.room || payload.room,
+                                room: payload.room,
                                 errorMessage: err.message
                             });
 
