@@ -18,7 +18,7 @@ const connectionsProbe = probe.metric({
     name: 'Chat connections'
 });
 
-const defaultTopic = "Benvenuti alla Storyboard di {0} e {1}";
+const defaultTopic = "Benvenuti allo Storyboard di {0} e {1}";
 
 connectionsProbe.set(0);
 
