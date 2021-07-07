@@ -1,13 +1,43 @@
 {
   "apps" : [{
-    "name"        : "ChatQuiz",
+    "name"        : "chatService",
     "script"      : "./index.js",
     "watch"       : false,
     "env": {
-      "NODE_ENV": "development"
+      "NODE_ENV": "development",
+      "GW_SERVER_PORT": 8086,
+      "GW_API_PROXY_URL": "/apiproxy/v1",
+      "GW_API_URL": "https://apidev.growish.com/v1",
+      "GW_APP_KEY": "1234567890",
+      "GW_TOPIC_LENGTH": 15,
+      "HISTORY_LIMIT": 10,
+      "HISTORY_MAX_SIZE": 600,
+      "TOPIC_LENGTH": 250,
+      "MONGO_SERVER": "mongodb://127.0.0.1:27017/chat"
+    },
+    "env_staging": {
+      "NODE_ENV": "development",
+      "GW_SERVER_PORT": 8086,
+      "GW_API_PROXY_URL": "/apiproxy/v1",
+      "GW_API_URL": "https://apidev.growish.com/v1",
+      "GW_APP_KEY": "1234567890",
+      "GW_TOPIC_LENGTH": 15,
+      "HISTORY_LIMIT": 10,
+      "HISTORY_MAX_SIZE": 600,
+      "TOPIC_LENGTH": 250,
+      "MONGO_SERVER": "mongodb://127.0.0.1:27017/chat"
     },
     "env_production" : {
-       "NODE_ENV": "production"
+      "NODE_ENV": "production",
+      "GW_SERVER_PORT": 8086,
+      "GW_API_PROXY_URL": "/apiproxy/v1",
+      "GW_API_URL": "https://api.growish.com/v1",
+      "GW_APP_KEY": "fh84sl02fh48kc94",
+      "GW_TOPIC_LENGTH": 15,
+      "HISTORY_LIMIT": 10,
+      "HISTORY_MAX_SIZE": 600,
+      "TOPIC_LENGTH": 250,
+      "MONGO_SERVER": "mongodb://127.0.0.1:27017/chat"
     }
   }]
 } 
